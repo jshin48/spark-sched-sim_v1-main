@@ -1,0 +1,480 @@
+[33mcommit 4191b3622c11c5c4aa0fadf62de178b3c80e7c51[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m)[m
+Author: jshin48 <jungeun4@illinois.edu>
+Date:   Thu Jan 18 09:47:14 2024 -0800
+
+    First commit : HeuristicNetworkAdded
+
+[33mcommit ff7a4f6d28608c2bedf81d89d6c4bde7fe9f0ee3[m[33m ([m[1;31morigin/main[m[33m)[m
+Author: jshin48 <jungeun4@illinois.edu>
+Date:   Fri Jan 12 10:58:41 2024 -0800
+
+    first commit
+
+[33mcommit 59e75866a30dc763c52d0b08fc22e41c496e785a[m
+Author: archiegertsman <arkadiy2@illinois.edu>
+Date:   Mon Jan 1 17:26:05 2024 -0600
+
+    fixed formatting, removed star imports, and added __add__ in __init__.py files
+
+[33mcommit f943d4df1aa89df1b99b9085ae624b3a706e6639[m
+Author: archiegertsman <arkadiy2@illinois.edu>
+Date:   Sun Dec 31 00:01:45 2023 -0600
+
+    refactored data sampling to be better pluggable
+
+[33mcommit f92ed5550f8596cf6add40b9630e680ceb3246ff[m
+Author: ArchieGertsman <arkadiygertsman@gmail.com>
+Date:   Sat Dec 30 19:04:18 2023 -0600
+
+    Create python-app.yml
+
+[33mcommit c710bc2f7a91a2d19ca9cc71f271d4003794a115[m
+Author: archiegertsman <arkadiy2@illinois.edu>
+Date:   Fri Dec 29 16:16:44 2023 -0600
+
+    fixed gymnasium warnings
+
+[33mcommit ae8bf35bf0cfde6c2cabe66e6d1d275f446ef29c[m
+Author: archiegertsman <arkadiy2@illinois.edu>
+Date:   Fri Dec 29 15:41:21 2023 -0600
+
+    fixed bug in reading device from config, added setup instructions, commented default config file
+
+[33mcommit 49b42268eb793fc3161c054b65eacbc4b65a420a[m
+Merge: 3eb6b4e 2359130
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Sun Oct 29 21:55:06 2023 -0500
+
+    resolved merge conflict
+
+[33mcommit 3eb6b4e9308e402b0c6199311f1c5b9e62bb87df[m
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Sun Oct 29 21:52:54 2023 -0500
+
+    optimized random number generation by replacing numpy's random with Python's random,  as appropriate
+
+[33mcommit 2359130fd31cd2c4eee50bb28c4e153044133e48[m
+Author: archiegertsman <arkadiy2@illinois.edu>
+Date:   Thu Sep 28 22:52:03 2023 -0500
+
+    removed debugging print statements
+
+[33mcommit 3cceffd5668658b1df7bfa2db17cb5c135802330[m
+Author: archiegertsman <arkadiy2@illinois.edu>
+Date:   Wed Sep 27 23:05:49 2023 -0500
+
+    removed data from github, it now downloads from dropbox automatically
+
+[33mcommit 144e171da9e093c58bf4273658fb432608d99ab8[m
+Author: ArchieGertsman <arkadiygertsman@gmail.com>
+Date:   Thu Sep 21 16:30:37 2023 -0500
+
+    Delete screenshot.png
+
+[33mcommit 318c6bb91b900981f9793a4458704db40e4b03d2[m
+Author: ArchieGertsman <arkadiygertsman@gmail.com>
+Date:   Thu Sep 21 12:42:36 2023 -0500
+
+    Update README.md
+
+[33mcommit 61dff0f993a5ab6bcd10f1dd0ec3be32b3575e09[m
+Author: ArchieGertsman <arkadiygertsman@gmail.com>
+Date:   Wed Sep 20 23:20:28 2023 -0500
+
+    Update README.md
+
+[33mcommit 0ea5a2e0e8f917baa2c12069e5d3f94eda478a3d[m
+Author: ArchieGertsman <arkadiygertsman@gmail.com>
+Date:   Wed Sep 20 23:17:17 2023 -0500
+
+    Update README.md
+
+[33mcommit 373b8f042b6c1de6279315233aadc48ed72cb6bb[m
+Author: archiegertsman <arkadiy2@illinois.edu>
+Date:   Wed Sep 20 23:01:58 2023 -0500
+
+    updated README, added argument to examples.py, added requirements.txt
+
+[33mcommit bb3e89d9c24f3b51864a3be35fcae814dc9a2035[m
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Thu Aug 10 12:01:56 2023 -0500
+
+    added continuously discounted returns and reading from config files
+
+[33mcommit 3a05ccab7610fe399e714a87a94156d071f80374[m
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Tue Jun 13 20:30:19 2023 -0500
+
+    made optimizations, refactored, added more model architectures, added PPO, trained decima in under 2h
+
+[33mcommit f0d352eb59fbbeb5d23d6767ba5df2cf2395142d[m
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Thu May 11 15:57:57 2023 -0500
+
+    made the NN more modular
+
+[33mcommit 5b115c402c9394b572d4fe1825ae91ad9ccc508d[m
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Mon May 8 21:39:03 2023 -0500
+
+    more refactoring
+
+[33mcommit 16bf57e6fd0e0f6b8f18a48df6d59dc181b0c588[m
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Mon May 8 18:18:40 2023 -0500
+
+    clearned up code a bit
+
+[33mcommit 99a1aeaa455129f371f8e0cc5296456738cc86ac[m
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Sun May 7 22:46:35 2023 -0500
+
+    removing experimental features from main
+
+[33mcommit 13a5c045d62463d525a901c9ed60fee59db75e31[m
+Merge: cf9536f 2061ea1
+Author: ArchieGertsman <arkadiygertsman@gmail.com>
+Date:   Sun May 7 22:14:25 2023 -0500
+
+    Merge pull request #2 from ArchieGertsman/experimental
+    
+    Experimental
+
+[33mcommit 2061ea1baf9e4ad23ec3aac6d2b442861bd21250[m
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Sat Apr 29 20:02:35 2023 -0500
+
+    fixed task duration generation bug, added model checkpoint saving
+
+[33mcommit 43d2a88b3dc38fe2af68715fc52c1f8841b01ee1[m
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Sat Apr 29 20:01:47 2023 -0500
+
+    fixed task duration generation bug, added model checkpoint saving
+
+[33mcommit 26ca313ea1745e952669a98d789899b720b5fd34[m
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Sat Apr 29 20:01:16 2023 -0500
+
+    fixed task duration generation bug, added model checkpoint saving
+
+[33mcommit 803d2bca09c0b2c3dbd63678490ae4946e65bb15[m
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Tue Apr 25 16:41:38 2023 -0500
+
+    eliminated redundant computation from paralellism selection
+
+[33mcommit c6f5042a28c63579364b431ef95691381452db31[m
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Tue Apr 25 16:24:38 2023 -0500
+
+    fixed bug where executors were not released from finished jobs, and started to remove redundant computation from parallelism scoring
+
+[33mcommit ff7c9b57a70598918b61ecd835de231185800a44[m
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Wed Apr 19 20:45:52 2023 -0500
+
+    optimized message passing by saving edge masks and collating them during learning phase
+
+[33mcommit cc270e322739be2c81fd3bf6c6a30eb69e1fff22[m
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Sun Apr 16 22:08:34 2023 -0500
+
+    implemented more correct message passing
+
+[33mcommit 3add2f316a84dda01237944bf921a9edeb3c9e43[m
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Wed Mar 29 22:44:30 2023 -0500
+
+    commit
+
+[33mcommit 3a1baf1e59cabe2c8670d7e768689dfa328679e0[m
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Wed Mar 22 12:17:12 2023 -0500
+
+    new branch
+
+[33mcommit cf9536fa34f2bf84734a486718a8abdb72e8d4ef[m
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Sun Feb 26 20:41:28 2023 -0600
+
+    added KL early stopping to training; did some training
+
+[33mcommit 3503d2bcd260cb721c28e0b96b4a6b9e0c3a7a89[m
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Sun Feb 19 18:45:35 2023 -0600
+
+    did some refactoring
+
+[33mcommit 86cff2ab3c4a577013b97c3e6fd843f66582463d[m
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Tue Feb 14 16:31:13 2023 -0600
+
+    now using torch dataloader to learn from rollouts in minibatches instead of writing sampling code from scratch
+
+[33mcommit ec1d11fa067685d14e0cbb388806e2ae87e27f79[m
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Fri Feb 10 19:43:24 2023 -0600
+
+    added PPO
+
+[33mcommit 8bb353c37d5c9f0c2dfe89b2b66b5143dc99ab29[m
+Merge: d38a206 1a778aa
+Author: ArchieGertsman <arkadiygertsman@gmail.com>
+Date:   Thu Feb 9 21:44:46 2023 -0600
+
+    Merge pull request #1 from ArchieGertsman/central_grads
+    
+    Central grads
+
+[33mcommit 1a778aa5ab1b74be238cee0283267bc5d2d37e6b[m
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Thu Feb 9 21:43:25 2023 -0600
+
+    fixed bug in RolloutBuffer class, now training is going even better than before with DDP
+
+[33mcommit 538db8e0280f5929fd494de6c2ece8e15180e5f5[m
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Thu Feb 9 00:48:39 2023 -0600
+
+    moved all the learning to the center, also broke up learning into minibatches like in PPO. agent is not learning anything yet
+
+[33mcommit d38a2064aa080b9daea8faeae5768e36b0165d32[m
+Author: archiegertsman <arkadiy2@illinois.edu>
+Date:   Wed Feb 8 21:20:50 2023 -0600
+
+    moved rendering into its own class and added some type hints
+
+[33mcommit b9229f3a3c73331ea0d7aa5116f6534d64972865[m
+Author: ArchieGertsman <arkadiygertsman@gmail.com>
+Date:   Wed Feb 8 01:27:17 2023 -0600
+
+    changed gif in README
+
+[33mcommit 2ff88c099cc0b701395328c539bd4f9c5d122c77[m
+Author: ArchieGertsman <arkadiygertsman@gmail.com>
+Date:   Wed Feb 8 00:14:00 2023 -0600
+
+    added caption to gif in README
+
+[33mcommit 3a6087c881ec0b30ab1fd990df9462ba7efb9c83[m
+Author: ArchieGertsman <arkadiygertsman@gmail.com>
+Date:   Wed Feb 8 00:02:33 2023 -0600
+
+    Update README.md
+    
+    added gif of env rendering
+
+[33mcommit b77b7a7fe08ef6c7b1a893fd8ed79baf1624afea[m
+Author: archiegertsman <arkadiy2@illinois.edu>
+Date:   Tue Feb 7 23:52:21 2023 -0600
+
+    added rendering
+
+[33mcommit 50132f19b04307abceaa498044aa612d9202844e[m
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Tue Feb 7 17:42:34 2023 -0600
+
+    did some refactoring / cleaning
+
+[33mcommit 73e92056dfe7dab416098fe020d1a3f2539c11a4[m
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Mon Feb 6 18:17:09 2023 -0600
+
+    fixed bug due to sets not preserving order and another bug in inducing subgraphs; updated heuristic agents to work with new Gymnasium implementation
+
+[33mcommit ee8ca512f1053423c6d8b28655a6a8dfc605985f[m
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Sun Feb 5 00:07:15 2023 -0600
+
+    changed obs/act spaces and added wrappers
+
+[33mcommit 56bb189a30f1c5c694ebdf22562bc8233386ea05[m
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Fri Feb 3 18:12:26 2023 -0600
+
+    made observing the environment faster
+
+[33mcommit b4ffa63498f1f73a67822d98cfcf667aec21ff35[m
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Fri Feb 3 00:14:55 2023 -0600
+
+    in the process of incorporating proper Gymnasium observation and action spaces
+
+[33mcommit 201181cdca7970ea0ff705387e0a5dd00df2ed6c[m
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Wed Feb 1 23:45:07 2023 -0600
+
+    refactored code to align more with stable_baselines3
+
+[33mcommit e7f55b525d103c7d2989ab766deb81dd0f6573bf[m
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Wed Feb 1 20:17:53 2023 -0600
+
+    standardizing rewards instead of scalaing by constant
+
+[33mcommit 96e2c5c0e7ef3198c045c8041090aadeba14a023[m
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Tue Jan 31 20:09:50 2023 -0600
+
+    doing some testing
+
+[33mcommit de403b5718bf25581126b8efa7aab203866a8c08[m
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Mon Jan 30 01:24:18 2023 -0600
+
+    added another agent, streamlined testing, restructured repo
+
+[33mcommit bfe1fc934a8b660cfc51db8cba7a5635f031e9d5[m
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Sat Jan 28 21:21:01 2023 -0600
+
+    integrated Gymnasium interface
+
+[33mcommit 67354632029fbb8dcabfd8b0bc41edfc096c99ee[m
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Sat Jan 28 17:46:27 2023 -0600
+
+    added dynamic partition heuristic agent
+
+[33mcommit 6689502a495d8d725ab9634f61281e6d602393a1[m
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Sat Jan 28 12:19:34 2023 -0600
+
+    unscheduled workers now get explicitly commited to general pool
+
+[33mcommit a337b60ca8b1a46c0eca5ede0db4a66796c8a7d1[m
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Wed Jan 25 14:57:05 2023 -0600
+
+    refactored code a bit
+
+[33mcommit fd67b8f5cd0d77552d4615597bb5ce6133363c7a[m
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Wed Jan 25 00:05:25 2023 -0600
+
+    began to try training the agent. found some bugs along the way and fixed them
+
+[33mcommit a75b779407715488391ffd9d741714a9346f3af2[m
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Sun Jan 22 21:44:50 2023 -0600
+
+    removing old State tests from remote
+
+[33mcommit f320cc97b926611d531f22b9a4f552f519f759e2[m
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Sun Jan 22 21:41:20 2023 -0600
+
+    re-implemented State class using only dicts for performance, i.e. no more networkx
+
+[33mcommit e027b78f05c4ef1ac6af2223eccce6bce5e51212[m
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Sun Jan 22 16:48:02 2023 -0600
+
+    removing some files from git
+
+[33mcommit b9b2b84d31564cfed5e6603394d69f98d914fd5c[m
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Sun Jan 22 00:36:20 2023 -0600
+
+    max episode length is now based on wall time instead of steps; worker source is now cleared after each commitment round
+
+[33mcommit cb7cf441577a1327f5e3f12f2fd9856d3b4e9657[m
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Fri Jan 20 23:29:05 2023 -0600
+
+    made optimizations to State class, and started masking out ops belonging to saturated jobs
+
+[33mcommit eae4be4a8f02ff40d76c43b1711b9c2c97ac5408[m
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Thu Jan 19 16:48:35 2023 -0600
+
+    batched the computation of action log-probabilities and entropies, but running into memory leak
+
+[33mcommit bd809fc0262aae00657c95914c9c596cf06dab55[m
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Mon Jan 16 19:10:26 2023 -0600
+
+    fixed differential return bug and cleaned up baseline code
+
+[33mcommit 0370b485445e4acc4b45683c998be16f3fbe0686[m
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Sat Jan 14 23:57:06 2023 -0600
+
+    began to integrate differential returns as in decima, and did some refactoring
+
+[33mcommit 039081b754235f1554c0cbecb6049f8a2c38d926[m
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Fri Jan 13 23:49:01 2023 -0600
+
+    changed RL algorithm to build computational graph only after the episode ends, i.e. to learn entirely offline
+
+[33mcommit d42146036b93e3b4ecf2acc985b37f60f1cc1ef4[m
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Thu Jan 12 14:13:04 2023 -0600
+
+    computing baselines like decima now; trying to speed up backward pass
+
+[33mcommit 20dee969ed069cd8958acbb5cc2e6314771381fc[m
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Mon Jan 9 18:30:21 2023 -0600
+
+    made more optimizations, including sparse message passing and caching the dags
+
+[33mcommit 495a8e06a3a900085f3e6eb695f44bff54d075e5[m
+Merge: bbd7991 777f3a3
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Thu Jan 5 23:26:59 2023 -0600
+
+    Merge branch 'main' of https://github.com/ArchieGertsman/gym-dagsched
+
+[33mcommit bbd7991691b37f8efda27e98d407fb242e464a1f[m
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Thu Jan 5 23:25:58 2023 -0600
+
+    removed some files from git
+
+[33mcommit 777f3a3734438d34139c5d48ed3e0315ac7cf976[m
+Author: ArchieGertsman <arkadiygertsman@gmail.com>
+Date:   Thu Jan 5 23:21:38 2023 -0600
+
+    Update README.md
+
+[33mcommit 55a9d22f6e14ba2c6b125b46dc65a50598aab14d[m
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Mon Jan 2 22:41:42 2023 -0600
+
+    made a lot of optimizations
+
+[33mcommit e27325fa8686ed5c5a4801940c05ad933f271838[m
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Thu Dec 29 21:45:40 2022 -0600
+
+    find schedulable ops on the fly now, slower but less bug-prone
+
+[33mcommit b6c0ffa03b5a2deea1b051e01242e878512739e7[m
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Tue Dec 27 22:46:29 2022 -0600
+
+    revisiting asynchronous episodes
+
+[33mcommit 6f52847182e66fd0935462bc45988915a9dcefcf[m
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Wed Dec 21 20:56:54 2022 -0800
+
+    lots of debugging, seem to be close but episode can finish without all jobs completing
+
+[33mcommit cd611af72e0669ff9a52451a233b833ea3b9a517[m
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Fri Dec 2 23:57:17 2022 -0800
+
+    started trying to get the code to run again
+
+[33mcommit cb357fb8261c58cacbdb2786bcfb375a0af6491e[m
+Author: Archie Gertsman <arkadiygertsman@gmail.com>
+Date:   Thu Dec 1 19:30:06 2022 -0800
+
+    more refactoring, reset returns initial observation now
+
+[33mcommit 1fbd4910a33332cd4688d9ac82000412bad750de[m
+Author: Archie Gert
