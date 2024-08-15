@@ -80,26 +80,24 @@ class AlibabaDataSampler(BaseDataSampler):
 
         if executor.is_idle:
             # the executor was just sitting idly or moving between jobs, so it needs time to warm up
-            return stage.most_recent_duration + self.warmup_delay
-
-        if executor.task.stage_id == task.stage_id:
+            task.warmup_delay = self.warmup_delay
             # the executor is continuing work on the same stage, which is relatively fast
-            return stage.most_recent_duration
-
+        elif executor.task.stage_id == task.stage_id:
+            task.warmup_delay = 0
             # the executor is new to this stage (or 'rest_wave' data was not available)
-        return stage.most_recent_duration + self.warmup_delay
+        else:
+            task.warmup_delay = self.warmup_delay
+
+        return stage.task_duration + task.warmup_delay
+
 
     @classmethod
     def _load_query(cls, query_num, query_size):
+        #query_path = "C:/Users/purin/Box/Research_Jungeun/Workflow Scheduling/decima-sim-master_test/spark_env/alibaba/" + str(query_size)
         query_path = osp.join("data/alibaba", str(query_size))
 
-        adj_matrix = np.load(
-            osp.join(query_path, f"adj_mat_{query_num}.npy"), allow_pickle=True
-        )
-
-        task_duration_data = np.load(
-            osp.join(query_path, f"ins_dur{query_num}.npy"), allow_pickle=True
-        )
+        adj_matrix = np.load(osp.join(query_path, f"adj_mat_{query_num}.npy").replace("\\","/"), allow_pickle=True)
+        task_duration_data = np.load(osp.join(query_path, f"ins_dur{query_num}.npy").replace("\\","/"), allow_pickle=True)
 
         assert adj_matrix.shape[0] == adj_matrix.shape[1]
         assert adj_matrix.shape[0] == len(task_duration_data)
@@ -107,17 +105,21 @@ class AlibabaDataSampler(BaseDataSampler):
         return adj_matrix, task_duration_data
 
     def _sample_job(self, job_id, t_arrival):
+        successful_sample = 0
         adj_mat = np.array([0])
-        while len(np.stack(adj_mat.nonzero(),axis=-1)) == 0:  #Need to sample a DAG with at least two stages
+        while len(np.stack(adj_mat.nonzero(),axis=-1)) == 0 or successful_sample == 0:  #Need to sample a DAG with at least two stages
             query_num = 1 + self.np_random.integers(NUM_QUERIES)
             query_size = self.np_random.choice(QUERY_SIZES)
-            adj_mat, task_duration_data = self._load_query(query_num, query_size)
-
+            try:
+                adj_mat, task_duration_data = self._load_query(query_num, query_size)
+                successful_sample = 1
+            except:
+                continue
         num_stages = adj_mat.shape[0]
         stages = []
 
         #calculate cpt
-        if self.splitting_rule is None:
+        if self.splitting_rule == "None":
             task_duration_list = [task_duration_data[stage_id][1] for stage_id in range(num_stages)]
             num_tasks_list = [int(task_duration_data[stage_id][0]) for stage_id in range(num_stages)]
         elif type(self.splitting_rule) == int or self.splitting_rule == "DTS":
@@ -131,9 +133,8 @@ class AlibabaDataSampler(BaseDataSampler):
         for stage_id in range(num_stages):
             num_tasks = num_tasks_list[stage_id]
             task_duration = max(task_duration_list[stage_id], 1) #Some tasks have duration less than 1, which recorded as 0 in alibaba data.
-            rough_duration = task_duration
 
-            stage = Stage(stage_id, job_id, num_tasks, rough_duration,cpt[stage_id], num_children[stage_id])
+            stage = Stage(stage_id, job_id, num_tasks, task_duration,cpt[stage_id], num_children[stage_id])
             stages += [stage]
 
 
@@ -147,9 +148,9 @@ class AlibabaDataSampler(BaseDataSampler):
         job = Job(job_id, stages, dag, t_arrival,np.max(cpt))
         job.query_num = query_num
         job.query_size = query_size
+        job.sample_type = "alibaba"
 
         summary = {"job_idx":job_id, "adj_mat": adj_mat, "task_duration": task_duration_data, "cpt": [stage.cpt for stage in stages]}
-        #print("job_idx:",job_id, "adj_mat:",adj_mat, "num_tasks:",num_tasks_list, "task_duration_data:",task_duration_data, "task_duration:",task_duration_list)
 
         return job
 
@@ -181,56 +182,3 @@ class AlibabaDataSampler(BaseDataSampler):
                         cpt_updated_count[stage_id] = 1
 
         return cpt, num_children
-
-    # def _init_executor_intervals(self, exec_cap):
-    #     exec_levels = [5, 10, 20, 40, 50, 60, 80, 100]
-    #
-    #     intervals = np.zeros((exec_cap + 1, 2))
-    #
-    #     # get the left most map
-    #     intervals[: exec_levels[0] + 1] = exec_levels[0]
-    #
-    #     # get the center map
-    #     for i in range(len(exec_levels) - 1):
-    #         intervals[exec_levels[i] + 1 : exec_levels[i + 1]] = (
-    #             exec_levels[i],
-    #             exec_levels[i + 1],
-    #         )
-    #
-    #         if exec_levels[i + 1] > exec_cap:
-    #             break
-    #
-    #         # at the data point
-    #         intervals[exec_levels[i + 1]] = exec_levels[i + 1]
-    #
-    #     # get the residual map
-    #     if exec_cap > exec_levels[-1]:
-    #         intervals[exec_levels[-1] + 1 : exec_cap] = exec_levels[-1]
-    #
-    #     self.executor_intervals = intervals
-
-#
-# class MultiSet:
-#     """
-#     allow duplication in set
-#     """
-#
-#     def __init__(self):
-#         self.set = {}
-#
-#     def __contains__(self, item):
-#         return item in self.set
-#
-#     def add(self, item):
-#         if item in self.set:
-#             self.set[item] += 1
-#         else:
-#             self.set[item] = 1
-#
-#     def clear(self):
-#         self.set.clear()
-#
-#     def remove(self, item):
-#         self.set[item] -= 1
-#         if self.set[item] == 0:
-#             del self.set[item]

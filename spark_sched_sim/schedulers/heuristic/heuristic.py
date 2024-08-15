@@ -12,6 +12,8 @@ class HeuristicObs(NamedTuple):
     exec_supplies: np.ndarray
     num_committable_execs: int
     source_job_idx: int
+    DRA_exec_cap : dict
+    stage_mask : np.ndarray
 
 
 class HeuristicScheduler(Scheduler):
@@ -20,8 +22,10 @@ class HeuristicScheduler(Scheduler):
     @classmethod
     def preprocess_obs(cls, obs):
         frontier_mask = np.ones(obs["dag_batch"].nodes.shape[0], dtype=bool)
-        dst_nodes = obs["dag_batch"].edge_links[:, 1]
-        frontier_mask[dst_nodes] = False
+        dst_nodes = obs["dag_batch"].edge_links[:, 1] # destination nodes: children nodes of uncompleted nodes in the queue.
+        frontier_mask[dst_nodes] = False # children nodes cannot be scheduled, yet.
+        # frontier_stages identify the frontier node number
+        # ex) frontier_stages = {1, 3, 4, 7} if frontier_mask = np.array([0, 1, 0, 1, 1, 0, 0, 1])
         frontier_stages = set(frontier_mask.nonzero()[0])
 
         job_ptr = np.array(obs["dag_ptr"])
@@ -35,6 +39,8 @@ class HeuristicScheduler(Scheduler):
         exec_supplies = np.array(obs["exec_supplies"])
         num_committable_execs = obs["num_committable_execs"]
         source_job_idx = obs["source_job_idx"]
+        DRA_exec_cap = obs["DRA_exec_cap"]
+        stage_mask = obs["stage_mask"]
 
         return HeuristicObs(
             job_ptr,
@@ -43,6 +49,8 @@ class HeuristicScheduler(Scheduler):
             exec_supplies,
             num_committable_execs,
             source_job_idx,
+            DRA_exec_cap,
+            stage_mask
         )
 
     @classmethod
@@ -60,6 +68,7 @@ class HeuristicScheduler(Scheduler):
             except KeyError:
                 continue
 
+            # froniter_stages are stages that doesn't have any children at all (whether it's already processed or not)
             if node in obs.frontier_stages:
                 return i
 

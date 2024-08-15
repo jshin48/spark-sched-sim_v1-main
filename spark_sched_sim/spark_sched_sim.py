@@ -1,3 +1,4 @@
+import sys
 from bisect import bisect_left, bisect_right
 from collections import deque
 
@@ -84,16 +85,19 @@ class SparkSchedSimEnv(Env):
         self.job_duration_buff = deque(maxlen=200)
 
         #JS Added
-        try:
+        self.agent_cls = env_cfg["agent_cls"]
+        if self.agent_cls == 'HyperHeuristicScheduler' or self.agent_cls == 'HybridHeuristicScheduler':
             self.num_heuristics = env_cfg["num_heuristics"]
             self.list_heuristics = env_cfg["list_heuristics"]
             self.num_resource_heuristics = env_cfg["num_resource_heuristics"]
             self.NUM_NODE_FEATURES = 7
-        except (TypeError, KeyError):
-            self.num_heuristics = 1
+        elif self.agent_cls == 'DecimaScheduler':
+            self.num_heuristics = 1 #Dummy value
             self.list_heuristics = ["None"]
-            self.num_resource_heuristics = 1
+            self.num_resource_heuristics = 1 #Dummy value
             self.NUM_NODE_FEATURES = 5
+        else:
+            sys.exit("agent_cls is invalid @ spark_sched_sim.py 100")
 
         self.queue_length = []
         self.splitting_rule = env_cfg["splitting_rule"]
@@ -200,8 +204,8 @@ class SparkSchedSimEnv(Env):
         return self._observe(), self.info
 
     def step(self, action):
-        #NUM_committable_execs = self.exec_tracker.num_committable_execs()
-        #print("In env.step (num_committable, action):", NUM_committable_execs, action)
+        NUM_committable_execs = self.exec_tracker.num_committable_execs()
+        #print("- In env.step (num_committable, action, wall_time):", NUM_committable_execs, action, self.wall_time)
         self._take_action(action)
 
         if (
@@ -279,11 +283,11 @@ class SparkSchedSimEnv(Env):
         job_ptr = [0]
         for job in self.jobs.values():
             base_stage_idx = job_ptr[-1]
-            edges = np.vstack(job.dag.edges, dtype=np.int64)
+            edges = np.vstack(job.dag.edges) #for window: dtype=np.int64)
             edge_links += [base_stage_idx + edges]
             job_ptr += [base_stage_idx + job.num_stages]
         self.all_edge_links = np.vstack(edge_links)
-        self.all_job_ptr = np.array(job_ptr, dtype=np.int64)
+        self.all_job_ptr = np.array(job_ptr) #for window: dtype=np.int64)
 
     def _load_initial_jobs(self):
         while not self.timeline.empty:
@@ -302,6 +306,8 @@ class SparkSchedSimEnv(Env):
         self.schedulable_stages = self._find_schedulable_stages()
 
     def _take_action(self, action):
+        if self.action_space.contains(action) == False:
+            print('-------------------invalid action',action)
         assert self.action_space.contains(action), "invalid action"
 
         if action["stage_idx"] == -1:
@@ -320,7 +326,7 @@ class SparkSchedSimEnv(Env):
             num_executors <= self.exec_tracker.num_committable_execs()
         ), "too many executors selected"
         #Split the selected stage into multiple stages according to splitting rule
-        if self.splitting_rule is not None and stage.splitted == False:
+        if self.splitting_rule != "None" and stage.splitted == False:
             self.split_tasks(num_executors,stage,self.get_avg_task_duration())
             
         # agent may have requested more executors than are actually needed
@@ -344,6 +350,8 @@ class SparkSchedSimEnv(Env):
         )
     
     def split_tasks(self,num_executors,stage,avg_task_duration):
+        assert stage.splitted == False
+
         if type(self.splitting_rule) == int:
             split_level = self.splitting_rule
         elif self.splitting_rule == "DTS":
@@ -354,15 +362,15 @@ class SparkSchedSimEnv(Env):
             while previous_TCT >= current_TCT and split_level <self.num_executors: #level < self.job_dag.limit_exec_cap: #
                 previous_TCT = current_TCT
                 split_level += 1
-                current_TCT = self.pod_creation_time + stage.most_recent_duration / split_level + \
+                current_TCT = self.pod_creation_time + stage.task_duration / split_level + \
                               max((split_level-num_executors)*avg_task_duration/self.num_executors,0)
                 # current_TCT =  stage.most_recent_duration / split_level + max((level-min(num_source_exec,self.job_dag.limit_exec_cap-len(self.job_dag.executors)))
                 #                                           *(avg_task_duration+args.pod_creation_time)/self.job_dag.limit_exec_cap,0)
 
-        task_duration = stage.most_recent_duration / split_level
-        stage.most_recent_duration = task_duration
+        task_duration = stage.task_duration * stage.num_tasks/ split_level
+        stage.task_duration = task_duration
         stage.num_tasks = split_level
-        stage.remaining_tasks = set(Task(id_=i, stage_id=stage.id_, job_id=stage.job_id) for i in
+        stage.remaining_tasks = set(Task(id_=i, stage_id=stage.id_, job_id=stage.job_id, duration=task_duration) for i in
                                    range(stage.num_tasks))
         stage.num_remaining_tasks = split_level
         stage.splitted = True
@@ -414,8 +422,9 @@ class SparkSchedSimEnv(Env):
             stage.is_schedulable = True
 
         # Collect job information for DRA algorithm (job_cpt, rank)
-        active_jobs_info = {}
+        scheduable_jobs_cpt = {}
         for i, job_id in enumerate(self.active_job_ids):
+            num_scheduable_stages = 0
             job = self.jobs[job_id]
 
             if job_id == self.exec_tracker.source_job_id():
@@ -427,24 +436,29 @@ class SparkSchedSimEnv(Env):
                 nodes += [
                     (
                         stage.num_remaining_tasks,
-                        stage.most_recent_duration,
+                        stage.task_duration,
                         stage.is_schedulable,
                         stage.cpt,
                         stage.num_children
                     )
                 ]
+                num_scheduable_stages += stage.is_schedulable
                 stage.is_schedulable = False
-
+                # active_stage_mask is a list of all stages. True if it's currently active, False o.w
                 active_stage_mask[self.all_job_ptr[job_id] + stage.id_] = 1
                 stage_cpts.append(stage.cpt)
 
             dag_ptr += [len(nodes)]
-            active_jobs_info[job_id] = max(stage_cpts)
+            if num_scheduable_stages > 0:
+                scheduable_jobs_cpt[job_id] = max(stage_cpts)
 
-        job_cpt_rank = {key: rank for rank, key in enumerate(sorted(active_jobs_info, key=active_jobs_info.get, reverse=True), 1)}
+        job_cpt_rank = {key: rank for rank, key in enumerate(sorted(scheduable_jobs_cpt, key=scheduable_jobs_cpt.get, reverse=True), 1)}
 
         for i, job_id in enumerate(self.active_job_ids):
-            DRA_exec_cap[i] = int(np.ceil(self.num_executors * job_cpt_rank[job_id]/ len(self.active_job_ids)))
+            if job_id in scheduable_jobs_cpt.keys():
+                DRA_exec_cap[i] = int(np.ceil(self.num_executors * job_cpt_rank[job_id] / len(scheduable_jobs_cpt)))
+            else:
+                DRA_exec_cap[i] = 0
 
         try:
             nodes = np.vstack(nodes).astype(np.float32)
@@ -452,6 +466,8 @@ class SparkSchedSimEnv(Env):
             # there are no active stages
             nodes = np.zeros((0, self.NUM_NODE_FEATURES), dtype=np.float32)
 
+        #edge_links is a list of edge links shown as [start node, sink node] where start node is currently active.
+        # [[ 0  2], [ 0  9], [ 1  2], [ 2  4], [ 3  4], ...
         edge_links = graph_utils.subgraph(self.all_edge_links, active_stage_mask)
 
         # not using edge data, so this array is always zeros
@@ -465,7 +481,7 @@ class SparkSchedSimEnv(Env):
             "num_committable_execs": num_committable_execs,
             "source_job_idx": source_job_idx,
             "exec_supplies": exec_supplies,
-            "DRA_exec_cap": DRA_exec_cap, #exec_cap for each job_idx
+            "DRA_exec_cap": DRA_exec_cap,
         }
 
         #print('dag_batch_dtype.edge_links.T:',obs["dag_batch"].edge_links.T.dtype)
@@ -628,6 +644,7 @@ class SparkSchedSimEnv(Env):
         """
         executor_demand = self._get_executor_demand(stage)
         num_executors_adjusted = min(num_executors, executor_demand)
+        #print("...num_executor_adjusted(spark 647):",num_executors,"->",num_executors_adjusted, "stage.num_remaining_tasks",stage.num_remaining_tasks)
         assert num_executors_adjusted > 0
         return num_executors_adjusted
 
@@ -643,6 +660,7 @@ class SparkSchedSimEnv(Env):
         num_commitments = self.exec_tracker.num_commitments_to_stage(stage.pool_key)
 
         demand = stage.num_remaining_tasks - (num_executors_moving + num_commitments)
+
         return demand
 
     def _is_stage_saturated(self, stage):
@@ -664,17 +682,16 @@ class SparkSchedSimEnv(Env):
             # stage just became saturated
             job.saturated_stage_count += 1
 
-        task_duration = self.data_sampler.task_duration(self.jobs[stage.job_id], stage, task, executor) \
+        total_task_duration = self.data_sampler.task_duration(self.jobs[stage.job_id], stage, task, executor) \
                         + self.pod_creation_time
 
         executor.task = task
         executor.is_executing = True
         task.executor_id = executor.id_
         task.t_accepted = self.wall_time
-        stage.most_recent_duration = task_duration
 
         self.timeline.push(
-            self.wall_time + task_duration,
+            self.wall_time + total_task_duration,
             TimelineEvent(
                 type=TimelineEvent.Type.TASK_COMPLETION,
                 data={"stage": stage, "task": task},

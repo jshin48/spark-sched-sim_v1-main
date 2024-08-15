@@ -14,9 +14,12 @@ from ..scheduler import Scheduler
 from spark_sched_sim import graph_utils
 from ..heuristic.heuristic import HeuristicScheduler
 from ..heuristic.random_scheduler import RandomScheduler
-from ..heuristic.round_robin import RoundRobinScheduler
+from ..heuristic.fifo import FifoScheduler
 from ..heuristic.wscpt import WscptScheduler
 from ..heuristic.mc import McScheduler
+from ..heuristic.sjf import SjfScheduler
+from ..heuristic.ljf import LjfScheduler
+from ..heuristic.resource_heuristics import ResourceHeuristics
 
 
 class NeuralScheduler(Scheduler):
@@ -56,7 +59,12 @@ class NeuralScheduler(Scheduler):
             state_dict = torch.load(state_dict_path)
             self.actor.load_state_dict(state_dict)
 
-        self.heuristics_count = [0 for i in range(self.num_heuristics)]
+        if self.name == "HyperHeuristic":
+            self.heuristics_count = [0 for i in range(self.num_heuristics)]
+
+        if self.resource_allocation == "HyperHeuristic":
+            self.resource_heuristics_count = [0 for i in range(self.num_resource_heuristics)]
+
         self.np_random = np.random.RandomState(42)
 
     @property
@@ -84,15 +92,30 @@ class NeuralScheduler(Scheduler):
         # 2. select a schedulable stage
         if self.name == "HyperHeuristic":
             # 2. select a heuristic & retrieve information of the stage selected by the heuristic
-            heuristic_score = self.actor.heuristic_policy_network(h_dict)
+            heuristic_score = self.actor.heuristic_policy_network(dag_batch,h_dict)
+            # Ensure embeddings require gradients
+            # for name, param in self.actor.heuristic_policy_network.embedding_model.named_parameters():
+            #     if param.requires_grad:
+            #         if param.grad is not None:
+            #             print(f"Gradient for {name}: {param.grad.mean().item()}")
+            #         else:
+            #             print(f"No gradient computed for {name}")
+
             heuristic_idx, lgprob = self._sample(heuristic_score)
-            if heuristic_idx == 0:
-                scheduler = McScheduler(self.num_executors, dynamic_partition=True)
-            elif heuristic_idx == 1:
-                scheduler = WscptScheduler(self.num_executors, dynamic_partition=True)
+
+            if heuristic_idx == 1:
+                scheduler = McScheduler(self.num_executors, self.resource_allocation)
+            elif heuristic_idx == 0:
+                scheduler = WscptScheduler(self.num_executors, self.resource_allocation)
+            elif heuristic_idx == 2:
+                scheduler = SjfScheduler(self.num_executors, self.resource_allocation)
+            elif heuristic_idx == 3:
+                scheduler = LjfScheduler(self.num_executors,self.resource_allocation)
+            elif heuristic_idx == 4:
+                scheduler = FifoScheduler(self.num_executors, self.resource_allocation)
             else:
                 sys.exit("Heuristic idx is not matched to any scheduler")
-            self.heuristics_count[heuristic_idx ] += 1
+            self.heuristics_count[heuristic_idx] += 1
             action = scheduler(obs)
             stage_idx = action['stage_idx']
         else:
@@ -106,18 +129,12 @@ class NeuralScheduler(Scheduler):
 
         # 4. select the number of executors to add to that stage, conditioned
         # on that stage's job & Calculate lgprob
-
         if self.resource_allocation == "HyperHeuristic":
             resource_heuristic_score = self.actor.resource_heuristic_policy_network(dag_batch, h_dict, job_idx)
             resource_heuristic_idx, resource_lgprob = self._sample(resource_heuristic_score)
-            if resource_heuristic_idx == 0:
-                num_exec = obs["num_committable_execs"]-1
-            elif resource_heuristic_idx == 1:
-                num_exec = max(1,min(obs["DRA_exec_cap"][job_idx]-obs["exec_supplies"][job_idx], obs["num_committable_execs"]))-1
-            elif resource_heuristic_idx == 2:
-                num_exec = obs["num_committable_execs"]
-            else:
-                sys.exit("Resource Heuristic idx is not matched to any scheduler")
+            self.resource_heuristics_count[resource_heuristic_idx ] += 1
+            num_exec = ResourceHeuristics(resource_heuristic_idx,obs,job_idx)
+            lgprob = lgprob + resource_lgprob
         else:
             resource_heuristic_idx = -1
             if self.resource_allocation == 'Random':
@@ -127,7 +144,7 @@ class NeuralScheduler(Scheduler):
                 num_exec, exec_lgprob = self._sample(exec_scores)
                 lgprob = lgprob + exec_lgprob
             elif self.resource_allocation == 'DRA':
-                num_exec = max(1,min(obs["DRA_exec_cap"][job_idx]-obs["exec_supplies"][job_idx], obs["num_committable_execs"]))-1
+                num_exec = action['num_exec']
             else:
                 sys.exit("Check -resource allocation parameter.")
 
@@ -141,11 +158,25 @@ class NeuralScheduler(Scheduler):
 
         return action, lgprob
 
-    def _sample(self, logits):
-        pi = F.softmax(logits, 0).numpy()
+    def softmax_with_temperature(self, logits, temperature=0.5):
+        scaled_logits = logits / temperature
+        max_logits = torch.max(scaled_logits)  # For numerical stability
+        exp_logits = torch.exp(scaled_logits - max_logits)
+        return exp_logits / torch.sum(exp_logits)
+
+    def _sample(self,logits):
+        pi = self.softmax_with_temperature(logits,temperature=0.1).detach().numpy()
+        #print("action probability:", [round(pi[0], 2), round(pi[1], 2)])
         idx = random.choices(np.arange(pi.size), pi)[0]
         lgprob = np.log(pi[idx])
         return idx, lgprob
+
+    # def _sample(self, logits):
+    #     pi = F.softmax(logits, 0).numpy()
+    #     print("action probability:",[round(pi[0],2),round(pi[1],2)])
+    #     idx = random.choices(np.arange(pi.size), pi)[0]
+    #     lgprob = np.log(pi[idx])
+    #     return idx, lgprob
 
     def evaluate_actions(self, dag_batch, actions):
         # split columns of `actions` into separate tensors
@@ -174,12 +205,16 @@ class NeuralScheduler(Scheduler):
                 stage_scores.cpu(), num_stage_acts, stage_selections)
             action_lgprobs += stage_lgprobs
             action_entropies += stage_entropies
-        elif self.name == "HyperHeuristic":
-            heuristic_score = self.actor.heuristic_policy_network(h_dict)
+        elif self.name == "HyperHeuristic" or self.name == "HyperHeuristic_2":
+            if self.name == "HyperHeuristic":
+                heuristic_score = self.actor.heuristic_policy_network(dag_batch,h_dict)
+            if self.name == "HyperHeuristic2":
+                heuristic_score = self.actor.heuristic_policy_network2(dag_batch,h_dict)
             heuristic_lgprobs, heuristic_entropies = self._evaluate(
                 heuristic_score.cpu(), torch.tensor([self.num_heuristics] * len(job_indices)), heuristic_selections)
             action_lgprobs += heuristic_lgprobs
             action_entropies += heuristic_entropies
+
 
         #evaluate resource allocation model
         if self.resource_allocation == "DNN":
@@ -194,7 +229,6 @@ class NeuralScheduler(Scheduler):
                 resource_heuristic_scores.cpu(), torch.tensor([self.num_resource_heuristics] * len(job_indices)), resource_heuristic_selections)
             action_lgprobs += resource_heuristic_lgprobs
             action_entropies += resource_heuristic_entropies
-
 
         if self.name == "HyperHeuristic":
             action_entropies /= (self.num_executors * torch.tensor([self.num_heuristics * len(job_indices)])).log()
@@ -216,6 +250,7 @@ class NeuralScheduler(Scheduler):
         return selection_log_probs, entropies
 
     def update_parameters(self, loss=None):
+        #initial_embeddings = self.actor.embedding_model.embedding.weight.data.clone()
         if loss:
             # accumulate gradients
             loss.backward()
@@ -229,12 +264,26 @@ class NeuralScheduler(Scheduler):
             except RuntimeError:
                 print("infinite grad; skipping update.")
                 return
-
+        # check the gradient
+        # for name, param in self.actor.named_parameters():
+        #     if param.requires_grad:
+        #         if param.grad is not None:
+        #             print(f"Gradient for {name}: {param.grad.mean().item()}")
+        #         else:
+        #             print(f"No gradient computed for {name}")
         # update model parameters
         self.optim.step()
 
         # clear accumulated gradients
         self.optim.zero_grad()
+
+        #updated_embeddings = self.actor.embedding_model.embedding.weight.data
+        # print(f"Initial embeddings: {initial_embeddings}")
+        # print(f"Updated embeddings: {updated_embeddings}")
+
+        # Check differences
+        #diff = updated_embeddings - initial_embeddings
+        #print(f"Difference in embeddings: {diff}")
 
 
 def make_mlp(input_dim, hid_dims, output_dim, act_cls, act_kwargs=None):
@@ -347,6 +396,7 @@ class ExecPolicyNetwork(nn.Module):
 class HeuristicPolicyNetwork(nn.Module):
     def __init__(
         self,
+        embedding_model,
         num_heuristics,
         list_heuristics,
         emb_dims,
@@ -355,30 +405,28 @@ class HeuristicPolicyNetwork(nn.Module):
         super().__init__()
         self.num_heuristics = num_heuristics
         self.list_heuristics = list_heuristics
-        self.embedding_model = HeuristicEmbeddingModel(num_heuristics, emb_dims['heuristic'])
+        #self.embedding_model = HeuristicEmbeddingModel(num_heuristics, emb_dims['heuristic'])
+        self.embedding_model = embedding_model
 
         # Utilize all available information
-        input_dim = emb_dims['glob'] + emb_dims['heuristic']
+        input_dim = 1 + emb_dims['heuristic'] #1 + emb_dims['glob'] + emb_dims['heuristic']
         self.mlp_score = make_mlp(input_dim, output_dim=1, **mlp_kwargs)
 
-    def forward(self, h_dict):
+    def forward(self, dag_batch, h_dict):
         h_glob_rpt = h_dict['glob'].repeat_interleave(
             self.num_heuristics, dim=0)
+        num_queue = torch.sum(dag_batch["stage_mask"]).repeat(h_glob_rpt.shape[0],1)
         action_indices = torch.LongTensor(range(self.num_heuristics))
         heuristic_actions = self.embedding_model(action_indices)
-        heuristic_actions = heuristic_actions.repeat_interleave(
-            h_dict['glob'].shape[0], dim=0)
+        heuristic_actions = heuristic_actions.repeat_interleave(h_dict['glob'].shape[0], output_size=h_glob_rpt.shape[0], dim=0)
+
         # residual connections to original features
-        status_inputs = torch.cat(
-            [
-                h_glob_rpt,
-                heuristic_actions
-            ],
-            dim=1
-        )
+        #status_inputs = torch.cat([num_queue, h_glob_rpt, heuristic_actions], dim=1)
+        status_inputs = torch.cat([num_queue, heuristic_actions], dim=1)
 
         heuristic_scores = self.mlp_score(status_inputs).squeeze(-1)
-
+        #print("heuristic_actions",heuristic_actions)
+        #print("num_queue:",num_queue[0][0].item(),",heuristic_scores:",heuristic_scores)
         return heuristic_scores
 
 class HeuristicEmbeddingModel(nn.Module):
@@ -388,6 +436,7 @@ class HeuristicEmbeddingModel(nn.Module):
 
     def forward(self, action_indices):
         return self.embedding(action_indices)
+
 
 class ResourcePolicyNetwork(nn.Module):
     def __init__(self, num_resource_heuristics, list_resource_heuristics,
@@ -431,4 +480,42 @@ class ResourcePolicyNetwork(nn.Module):
 
         resource_heuristic_scores = self.mlp_score(status_inputs).squeeze(-1)
         return resource_heuristic_scores
+
+
+class HeuristicPolicyNetwork2(nn.Module):
+    def __init__(
+        self,
+        embedding_model,
+        num_heuristics,
+        list_heuristics,
+        emb_dims,
+        mlp_kwargs
+    ):
+        super().__init__()
+        self.num_heuristics = num_heuristics
+        self.list_heuristics = list_heuristics
+        #self.embedding_model = HeuristicEmbeddingModel(num_heuristics, emb_dims['heuristic'])
+        self.embedding_model = embedding_model
+
+        # Utilize all available information
+        input_dim = 1+emb_dims['glob'] + emb_dims['heuristic']
+        self.mlp_score = make_mlp(input_dim, output_dim=1, **mlp_kwargs)
+
+    def forward(self, dag_batch, h_dict):
+        h_glob_rpt = h_dict['glob'].repeat_interleave(
+            self.num_heuristics, dim=0)
+        num_queue = torch.sum(dag_batch["stage_mask"]).repeat(h_glob_rpt.shape[0],1)
+        action_indices = torch.LongTensor(range(self.num_heuristics))
+        heuristic_actions = self.embedding_model(action_indices)
+        heuristic_actions = heuristic_actions.repeat_interleave(h_dict['glob'].shape[0], output_size=h_glob_rpt.shape[0], dim=0)
+
+        # residual connections to original features
+        status_inputs = torch.cat([num_queue, h_glob_rpt, heuristic_actions], dim=1)
+        #status_inputs = torch.cat([h_glob_rpt, heuristic_actions], dim=1)
+
+        heuristic_scores = self.mlp_score(status_inputs).squeeze(-1)
+        #print("heuristic_actions",heuristic_actions)
+        #print("heuristic_scores",heuristic_scores)
+        return heuristic_scores
+
 

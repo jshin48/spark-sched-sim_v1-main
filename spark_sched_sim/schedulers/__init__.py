@@ -7,7 +7,7 @@ __all__ = [
     "RandomScheduler",
     "RoundRobinScheduler",
     "make_scheduler",
-    "HybridheuristicScheduler",
+    "HybridHeuristicScheduler",
     "HyperHeuristicScheduler"
 
 ]
@@ -17,15 +17,13 @@ from copy import deepcopy
 from .neural.neural import NeuralScheduler
 from .neural.decima import DecimaScheduler
 from .neural.hyperheuristic import HyperHeuristicScheduler
-#from .neural.hyperheuristic import HyperHeuristicScheduler
 
 from .neural.dagformer import DAGformerScheduler
 from .neural.dagnn import DAGNNScheduler
 
 from .heuristic.heuristic import HeuristicScheduler
 from .heuristic.random_scheduler import RandomScheduler
-from .heuristic.round_robin import RoundRobinScheduler
-from .heuristic.hybridheuristic import HybridheuristicScheduler
+from .heuristic.hybridheuristic import HybridHeuristicScheduler
 
 
 

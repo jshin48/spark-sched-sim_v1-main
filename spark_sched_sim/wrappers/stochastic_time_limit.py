@@ -28,4 +28,5 @@ class StochasticTimeLimit(Wrapper):
         obs, rew, term, trunc, info = self.env.step(act)
         if info["wall_time"] >= self.time_limit:
             trunc = True
+            print("Time limit is reached @stochastic_time_limit.py line 31")
         return obs, rew, term, trunc, info

@@ -27,7 +27,7 @@ class DecimaScheduler(NeuralScheduler):
         max_grad_norm=None,
         num_node_features=5,
         num_dag_features=3,
-        resource_allocation='Random',
+        resource_allocation='DNN',
         **kwargs,
     ):
         name = "Decima"

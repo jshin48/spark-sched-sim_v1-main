@@ -70,7 +70,7 @@ class RolloutWorker(ABC):
         # acquire it downloads the dataset, and any subsequent processes notices
         # that the dataset is already present once it acquires the lock.
         with lock:
-            env = gym.make("spark_sched_sim:SparkSchedSimEnv-v0", env_cfg=env_cfg)
+            env = gym.make("spark_sched_sim:SparkSchedSimEnv-v0", env_cfg=env_cfg|{"agent_cls":agent_cls})
 
         env = StochasticTimeLimit(env, env_cfg["mean_time_limit"])
         env = NeuralActWrapper(env)
@@ -139,7 +139,7 @@ class RolloutWorkerSync(RolloutWorker):
         terminated = truncated = False
         while not (terminated or truncated):
             action, lgprob = self.agent(obs)
-
+            #print("--action from rollout_workder", action)
             new_obs, reward, terminated, truncated, info = self.env.step(action)
             next_wall_time = info["wall_time"]
 
@@ -149,8 +149,6 @@ class RolloutWorkerSync(RolloutWorker):
             wall_time = next_wall_time
 
         rollout_buffer.wall_times += [wall_time]
-        if self.agent.name == "HyperHeuristic":
-            print("heuristics_count:",self.agent.heuristics_count[0]/sum(self.agent.heuristics_count),self.agent.heuristics_count[1]/sum(self.agent.heuristics_count))
         return rollout_buffer
 
 
@@ -178,7 +176,7 @@ class RolloutWorkerAsync(RolloutWorker):
             obs, wall_time = self.next_obs, self.next_wall_time
 
             action, lgprob = self.agent(obs)   #neural: def schedule
-
+            print("action from rollout_workder",action)
             self.next_obs, reward, terminated, truncated, info = self.env.step(action) #spark_sched_sim : def step
 
             self.next_wall_time = info["wall_time"]

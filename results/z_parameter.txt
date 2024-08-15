@@ -1,0 +1,1 @@
+python test_file.py --result_folder ./results/result_0501/ --input_file ./results/result_0501/test_parameter_abalation_5.csv --output_file result_abalation_5.csv

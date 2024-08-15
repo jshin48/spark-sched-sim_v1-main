@@ -1,5 +1,6 @@
 import numpy as np
-
+import csv
+import time
 
 def job_durations(env):
     durations = []
@@ -14,24 +15,18 @@ def avg_job_duration(env):
     return np.mean(job_durations(env))
 
 def print_task_job_time(env):
-    durations = []
+    f = open('./results/detail/'+str(env.agent_cls)+str(time.time())+'.csv', 'w', encoding='UTF8', newline='')
+    writer = csv.writer(f)
+    header = ['job_id','stage_id','task_id','job_arrival_t','task_start_t','task_end_t','task_dur','job_end_t','job_dur']
+    writer.writerow(header)
     for job_id in env.unwrapped.active_job_ids + list(env.unwrapped.completed_job_ids):
         job = env.unwrapped.jobs[job_id]
         t_end = min(job.t_completed, env.unwrapped.wall_time)
-        durations += [t_end - job.t_arrival]
-        print('job_id:', job_id, '-> arrival:', int(job.t_arrival), ',end:', int(t_end))
-    print('durations:', durations)
-
-    for job_id in env.unwrapped.active_job_ids + list(env.unwrapped.completed_job_ids):
-        job = env.unwrapped.jobs[job_id]
-        t_end = min(job.t_completed, env.unwrapped.wall_time)
-        print('job_id:', job_id, '-> start:', int(job.t_arrival), ',end:', int(t_end),
-              '(duration:', int(t_end-job.t_arrival),")")
         for stage in job.stages:
-            print('  stage_id:', stage.id_)
             for task in stage.completed_tasks:
-                print('    task_id:',task.id_, '-> start:', int(task.t_accepted), ',end:', int(task.t_completed),
-                      '(duration:', int(task.t_completed-task.t_accepted),")")
+                row = [job_id,stage.id_,task.id_,job.t_arrival,task.t_accepted,task.t_completed,
+                      int(task.t_completed-task.t_accepted), t_end,int(t_end-job.t_arrival)]
+                writer.writerow(row)
 
 
 def avg_num_jobs(env):

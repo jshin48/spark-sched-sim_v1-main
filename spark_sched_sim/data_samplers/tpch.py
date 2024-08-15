@@ -208,6 +208,7 @@ class TPCHDataSampler(BaseDataSampler):
         job = Job(job_id, stages, dag, t_arrival,np.max(cpt))
         job.query_num = query_num
         job.query_size = query_size
+        job.sample_type = "tpch"
 
         summary = {"job_idx":job_id, "adj_mat": adj_mat, "task_duration": task_duration_data, "cpt": [stage.cpt for stage in stages]}
 

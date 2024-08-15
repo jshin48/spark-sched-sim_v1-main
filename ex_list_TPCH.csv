@@ -1,0 +1,17 @@
+id,scheduler_name,train_data,num_heuristics,resource_allocation,splitting_rule,model_num_train,list_resource_heuristics,num_experiments,render_mode,model_name,test_data,job_arrival_rate,job_arrival_cap
+5,"""HyperHeuristicScheduler""","""AlibabaDataSampler""",3,"""DRA""","""None""",5,,1,"""None""","""3_DRA_cap500_int8""","""TPCHDataSampler""",2.08333333333333E-05,1
+5,"""HyperHeuristicScheduler""","""AlibabaDataSampler""",4,"""DRA""","""None""",5,,1,"""None""","""4_DRA_cap500_int8""","""TPCHDataSampler""",2.08333333333333E-05,1
+7,"""DecimaScheduler""","""AlibabaDataSampler""",2,"""DNN""","""None""",5,,1,"""None""","""cap100_int8""","""TPCHDataSampler""",2.08333333333333E-05,1
+7,"""DecimaScheduler""","""AlibabaDataSampler""",2,"""DNN""","""None""",20,,1,"""None""","""cap100_int8""","""TPCHDataSampler""",2.08333333333333E-05,1
+5,"""HyperHeuristicScheduler""","""TPCHDataSampler""",3,"""DRA""","""None""",5,,1,"""None""","""3_DRA_cap500_int48""","""TPCHDataSampler""",2.08333333333333E-05,1
+5,"""HyperHeuristicScheduler""","""TPCHDataSampler""",4,"""DRA""","""None""",5,,1,"""None""","""4_DRA_cap500_int48""","""TPCHDataSampler""",2.08333333333333E-05,1
+7,"""DecimaScheduler""","""TPCHDataSampler""",2,"""DNN""","""None""",5,,1,"""None""","""cap100_int48""","""TPCHDataSampler""",2.08333333333333E-05,1
+7,"""DecimaScheduler""","""TPCHDataSampler""",2,"""DNN""","""None""",20,,1,"""None""","""cap100_int48""","""TPCHDataSampler""",2.08333333333333E-05,1
+5,"""HyperHeuristicScheduler""","""AlibabaDataSampler""",3,"""DRA""","""None""",5,,1,"""None""","""3_DRA_cap500_int8""","""AlibabaDataSampler""",0.000125,1
+5,"""HyperHeuristicScheduler""","""AlibabaDataSampler""",4,"""DRA""","""None""",5,,1,"""None""","""4_DRA_cap500_int8""","""AlibabaDataSampler""",0.000125,1
+7,"""DecimaScheduler""","""AlibabaDataSampler""",2,"""DNN""","""None""",5,,1,"""None""","""cap100_int8""","""AlibabaDataSampler""",0.000125,1
+7,"""DecimaScheduler""","""AlibabaDataSampler""",2,"""DNN""","""None""",20,,1,"""None""","""cap100_int8""","""AlibabaDataSampler""",0.000125,1
+5,"""HyperHeuristicScheduler""","""TPCHDataSampler""",3,"""DRA""","""None""",5,,1,"""None""","""3_DRA_cap500_int48""","""AlibabaDataSampler""",0.000125,1
+5,"""HyperHeuristicScheduler""","""TPCHDataSampler""",4,"""DRA""","""None""",5,,1,"""None""","""4_DRA_cap500_int48""","""AlibabaDataSampler""",0.000125,1
+7,"""DecimaScheduler""","""TPCHDataSampler""",2,"""DNN""","""None""",5,,1,"""None""","""cap100_int48""","""AlibabaDataSampler""",0.000125,1
+7,"""DecimaScheduler""","""TPCHDataSampler""",2,"""DNN""","""None""",20,,1,"""None""","""cap100_int48""","""AlibabaDataSampler""",0.000125,1

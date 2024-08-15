@@ -85,7 +85,7 @@ class Trainer(ABC):
                     agent_cfg
                     | {"num_executors": env_cfg["num_executors"]}
                     | {k: train_cfg[k] for k in ["opt_cls", "opt_kwargs", "max_grad_norm"]}
-                    | {"resource_allocation": env_cfg["resource_allocation"]}
+                     | {"resource_allocation": env_cfg["resource_allocation"]}
             )
         self.agent = make_scheduler(self.agent_cfg)
         assert isinstance(self.agent, NeuralScheduler), "scheduler must be trainable."
@@ -109,6 +109,7 @@ class Trainer(ABC):
         print("Beginning training.\n", flush=True)
         past_comp_time = time.time()
         training_time = []
+        all_job_duration = []
         for i in range(self.num_iterations):
             actor_sd = deepcopy(self.agent.actor.state_dict())
             # # move params to GPU for learning
@@ -123,7 +124,7 @@ class Trainer(ABC):
 
             rollout_buffers, rollout_stats_list = zip(
                 *[(res["rollout_buffer"], res["stats"]) for res in results if res]
-            )
+            ) #rollout_worker.py def run
 
             # update parameters
             # with Profiler():
@@ -167,6 +168,8 @@ class Trainer(ABC):
                 flush=True,
             )
             past_comp_time = curr_comp_time
+            all_job_duration.append(avg_job_dur)
+        print("all_job_duration",all_job_duration)
         self._cleanup()
 
     @abstractmethod
@@ -225,7 +228,7 @@ class Trainer(ABC):
         os.mkdir(self.checkpointing_dir)
 
         # torch
-        torch.multiprocessing.set_start_method("spawn")
+        torch.multiprocessing.set_start_method("spawn",force=True)
         # print('cuda available:', torch.cuda.is_available())
         # torch.autograd.set_detect_anomaly(True)
 
@@ -239,6 +242,14 @@ class Trainer(ABC):
 
         if self.use_tensorboard:
             self.summary_writer.close()
+
+        # if self.agent.name == "HyperHeuristic":
+        #     heuristic_stat = [self.agent.heuristics_count[i]/sum(self.agent.heuristics_count) for i in range(len(self.agent.heuristics_count))]
+        #     print("heuristics_count:",heuristic_stat)
+        # if self.env_cfg.resource_allocation == "HyperHeuristic":
+        #     resource_heuristic_stat = [self.agent.resource_heuristics_count[i]/sum(self.agent.resource_heuristics_count)
+        #                                for i in range(len(self.agent.resource_heuristics_count))]
+        #     print("resource_heuristics_count:",resource_heuristic_stat)
 
         print("\nTraining complete.", flush=True)
 
@@ -256,7 +267,7 @@ class Trainer(ABC):
         dir = osp.join(self.checkpointing_dir, f"{i+1}")
         os.mkdir(dir)
         best_sd = best_state.pop("state_dict")
-        torch.save(best_sd, osp.join(dir, "model.pt"))
+        torch.save(best_sd, osp.join(dir, "model.pt").replace("\\","/"))
         with open(osp.join(dir, "state.json"), "w") as fp:
             json.dump(best_state, fp)
 

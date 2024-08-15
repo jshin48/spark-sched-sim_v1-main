@@ -1,0 +1,9 @@
+id,id,model_name,num_heuristics,list_heuristics,resource_allocation,num_resource_heuristics,list_resource_heuristics,num_experiments,splitting_rule,render_mode,avg_job_duration
+1,1,"""model_2_DNN_DTS/100/model""",2,"[""MC"",""WSCPT""]","""DNN""",,,1,"""DTS""","""human""",34.71268504259916
+2,2,"""model_2_DNN_None/100/model""",2,"[""MC"",""WSCPT""]","""DNN""",,,1,"""None""","""human""",87954.63200412873
+3,3,"""model_2_3_DTS/100/model""",2,"[""MC"",""WSCPT""]","""HyperHeuristic""",3,"[""Maximum"",""DRA"",""fair""]",1,"""DTS""","""human""",80.78367536640663
+4,4,"""model_2_3_None/100/model""",2,"[""MC"",""WSCPT""]","""HyperHeuristic""",3,"[""Maximum"",""DRA"",""fair""]",1,"""None""","""human""",73938.00467364132
+5,5,"""model_5_DNN_DTS/100/model""",5,"[""MC"",""WSCPT"",""FCFS"",""SJF"",""LJF""]","""DNN""",,,1,"""DTS""","""human""",32.342709780057376
+6,6,"""model_5_DNN_None/100/model""",5,"[""MC"",""WSCPT"",""FCFS"",""SJF"",""LJF""]","""DNN""",,,1,"""None""","""human""",76800.72376525264
+7,7,"""model_5_3_DTS/100/model""",5,"[""MC"",""WSCPT"",""FCFS"",""SJF"",""LJF""]","""HyperHeuristic""",3,"[""Maximum"",""DRA"",""fair""]",1,"""DTS""","""human""",77.11110726739082
+8,8,"""model_5_3_None/100/model""",5,"[""MC"",""WSCPT"",""FCFS"",""SJF"",""LJF""]","""HyperHeuristic""",3,"[""Maximum"",""DRA"",""fair""]",1,"""None""","""human""",86233.42603364133

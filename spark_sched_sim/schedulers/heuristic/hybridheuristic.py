@@ -7,16 +7,16 @@ from spark_sched_sim.wrappers import DAGNNObsWrapper
 
 
 
-class HybridheuristicScheduler(HeuristicScheduler):
-    def __init__(self, num_executors, rule_switch_threshold, dynamic_partition=True, seed=42):
+class HybridHeuristicScheduler(HeuristicScheduler):
+    def __init__(self, num_executors, resource_allocation, rule_switch_threshold=4, seed=42):
         super().__init__("Hybridheuristic")
         self.num_executors = num_executors
-        self.dynamic_partition = dynamic_partition
+        self.resource_allocation = resource_allocation
         self.set_seed(seed)
 
         self.obs_wrapper_cls = DAGNNObsWrapper
-        self.mc_scheduler = McScheduler(self.num_executors, dynamic_partition=True)
-        self.wscpt_scheduler = WscptScheduler(self.num_executors, dynamic_partition=True)
+        self.mc_scheduler = McScheduler(self.num_executors, self.resource_allocation)
+        self.wscpt_scheduler = WscptScheduler(self.num_executors, self.resource_allocation)
         self.rule_switch_threshold = rule_switch_threshold
 
     def set_seed(self, seed):

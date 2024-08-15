@@ -18,31 +18,25 @@ from spark_sched_sim.schedulers import (
 from spark_sched_sim.wrappers import NeuralActWrapper
 from spark_sched_sim import metrics
 
-# ENV_CFG = {
-#     "num_executors": 20,
-#     "job_arrival_cap": 200,
-#     "job_arrival_rate": 4.e-5,
-#     "moving_delay": 2000.0,
-#     "warmup_delay": 1000.0,
-#     "test_data" : "tpch", #alibaba or tpch
-#     "render_mode": "human"
-# }
-
 ENV_CFG = {
-    "num_executors": 40,
-    "job_arrival_cap": 100,
+    "num_executors": 2,
+    "job_arrival_cap": 5,
     "job_arrival_rate": 8.e-5, #for alibaba 8.e-6, #for tpch 4.e-5
-    "moving_delay": 10,
-    "warmup_delay": 10,
-    "pod_creation_time": 1.,
+    "moving_delay": 1000,#2000,
+    "warmup_delay": 0,#1000,
+    "pod_creation_time": 10,#100.,
     "train_data": "alibaba",
     "test_data" : "alibaba",
-    "render_mode": "human",
-    "rule_switch_threshold" : 4,
-    "hyper_model_name": "model_100_DNN", #The name of the model should match with resource allocation param
-    "decima_model_name": "model_40_rand_exec",
-    "resource_allocation": "DNN",
-    "splitting_rule": None #DTS, int, None
+    "render_mode": "human", #human
+    "hybrid_rule_threshold" : 4,
+    "decima_model_name": "model_100_DNN",
+    "hyper_model_name": "model_5_DNN_None/100/model", #The name of the model should match with resource allocation param
+    # "num_heuristics" : 5,
+    # "list_heuristics": ['MC','WSCPT'],
+    "resource_allocation": "DNN", #HyperHeuristic, Random, DNN, DRA
+    "num_resource_heuristics" : 3,
+    "list_resource_heuristics" : ['Maximum','DRA','fair'],
+    "splitting_rule": "None" #DTS, int, "None"
 }
 
 def main():
@@ -66,7 +60,7 @@ def main():
     # sched_map[args.sched]()
 
     #fair_example()
-    #decima_example()
+    decima_example()
     hyperheuristic_example()
     #hybridheuristic_example()
 
@@ -85,7 +79,7 @@ def fair_example():
     print()
 
 def decima_example():
-    cfg = load(filename=osp.join("config", "decima_tpch.yaml"))
+    cfg = load(filename=osp.join("config", "decima_alibaba.yaml"))
     agent_cfg = cfg["agent"] | {
         "num_executors": ENV_CFG["num_executors"],
         "state_dict_path": osp.join("models", "decima", ENV_CFG["train_data"], ENV_CFG["decima_model_name"]+".pt"),
@@ -100,7 +94,7 @@ def decima_example():
     pprint(ENV_CFG)
 
     print("Running episode...")
-    avg_job_duration = run_episode(ENV_CFG, scheduler)
+    avg_job_duration = run_episode(ENV_CFG|{"agent_cls": agent_cfg["agent_cls"]}, scheduler)
 
     print(f"Done! Average job duration: {avg_job_duration:.1f}s", flush=True)
 
@@ -108,7 +102,8 @@ def hyperheuristic_example():
     cfg = load(filename=osp.join("config", "hyperheuristic_"+ ENV_CFG["test_data"]+".yaml"))
     agent_cfg = cfg["agent"] | {
         "num_executors": ENV_CFG["num_executors"],
-        "state_dict_path": osp.join("models", "hyperheuristic", ENV_CFG["train_data"], ENV_CFG["hyper_model_name"]+".pt"),
+        "state_dict_path": Path("models/hyperheuristic/" +ENV_CFG["train_data"]+ "/"+ ENV_CFG["hyper_model_name"] +".pt"),
+        #"state_dict_path": osp.join("models", "hyperheuristic", ENV_CFG["train_data"], ENV_CFG["hyper_model_name"]+".pt"),
         "num_heuristics": cfg["env"]["num_heuristics"],
         "list_heuristics": cfg["env"]["list_heuristics"],
         "resource_allocation": cfg["env"]["resource_allocation"],
@@ -120,12 +115,13 @@ def hyperheuristic_example():
     env_cfg = dict(ENV_CFG)
     env_cfg["num_heuristics"] = cfg["env"]["num_heuristics"]
     env_cfg["list_heuristics"] = cfg["env"]["list_heuristics"]
-    env_cfg["plot_title"] = Path("./test_results/"+ENV_CFG["train_data"]+"/hyper/hyper_" +ENV_CFG["train_data"]+"_"+ENV_CFG["test_data"] +
-                                 "_" + ENV_CFG["hyper_model_name"] + "_" + str(ENV_CFG["splitting_rule"])+".png")
+    env_cfg["plot_title"]= Path("./test_results/"+"graph_hyper.png")
+    #env_cfg["plot_title"] = Path("./test_results/"+ENV_CFG["train_data"]+"/hyper/hyper_" +ENV_CFG["train_data"]+"_"+ENV_CFG["test_data"] +
+    # "_" + ENV_CFG["hyper_model_name"] + "_" + str(ENV_CFG["splitting_rule"])+".png")
     pprint(env_cfg)
 
     print("Running episode...")
-    avg_job_duration = run_episode(env_cfg, scheduler)
+    avg_job_duration = run_episode(env_cfg|{"agent_cls": agent_cfg["agent_cls"]}, scheduler)
 
     print(f"Done! Average job duration: {avg_job_duration:.1f}s", flush=True)
 
@@ -135,9 +131,9 @@ def hybridheuristic_example():
     env_cfg = dict(ENV_CFG)
     env_cfg["num_heuristics"] = cfg["env"]["num_heuristics"]
     env_cfg["list_heuristics"] = cfg["env"]["list_heuristics"]
-    env_cfg["plot_title"] = "Hybrid_"+ENV_CFG["test_data"]+"_k"+str(ENV_CFG["rule_switch_threshold"])+".png"
+    env_cfg["plot_title"] = "Hybrid_"+ENV_CFG["test_data"]+"_k"+str(ENV_CFG["hybrid_rule_threshold"])+".png"
 
-    scheduler = HybridheuristicScheduler(ENV_CFG["num_executors"],ENV_CFG["rule_switch_threshold"])
+    scheduler = HybridheuristicScheduler(ENV_CFG["num_executors"],ENV_CFG["hybrid_rule_threshold"])
 
     print("Example: Hybrid-Heuristic")
     print("Env settings:")

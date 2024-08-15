@@ -2,14 +2,13 @@ import numpy as np
 
 from .heuristic import HeuristicScheduler
 
-
 class WscptScheduler(HeuristicScheduler):
-    def __init__(self, num_executors, dynamic_partition=True, seed=42):
+    def __init__(self, num_executors, resource_allocation, seed=42):
         name = "WSCPT"
         super().__init__(name)
         self.num_executors = num_executors
-        self.dynamic_partition = dynamic_partition
         self.set_seed(seed)
+        self.resource_allocation = resource_allocation
 
     def set_seed(self, seed):
         self.np_random = np.random.RandomState(seed)
@@ -26,21 +25,16 @@ class WscptScheduler(HeuristicScheduler):
         source_job_idx = obs["source_job_idx"]
 
         num_active_jobs = len(exec_supplies)
-
-        if self.dynamic_partition:
-            executor_cap = self.num_executors / max(1, num_active_jobs)
-            executor_cap = int(np.ceil(executor_cap))
-        else:
-            executor_cap = self.num_executors
-
         selected_job_idx = -1
+        num_exec = -1
         if schedulable_stages:
             # first, try to find a stage in the same job that is releasing executers
             if source_job_idx < num_active_jobs:
                 stage_idx_start = job_ptr[source_job_idx]
                 stage_idx_end = job_ptr[source_job_idx + 1]
-                if stage_mask[stage_idx_start:stage_idx_end].sum() > 0 :
+                if stage_mask[stage_idx_start:stage_idx_end].sum() > 0:
                     selected_job_idx = source_job_idx
+                    num_exec = num_committable_execs-1
 
             if selected_job_idx == -1:
                 # find job cpt
@@ -50,22 +44,57 @@ class WscptScheduler(HeuristicScheduler):
                     job_stages_cpt = masked_stages_cpt[np.arange(job_ptr[job_idx], job_ptr[job_idx + 1])]
                     if len(job_stages_cpt.nonzero()[0]) > 0 :
                         job_cpt[job_idx] = max(job_stages_cpt)
-                selected_job_idx = min(job_cpt,key = job_cpt.get)
+
+                if self.resource_allocation == 'DRA':
+                    for job in range(num_active_jobs):
+                        selected_job_idx = min(job_cpt, key=job_cpt.get)
+                        # if obs["DRA_exec_cap"][selected_job_idx] < self.num_executors:
+                        #     # increase DRA exec_cap manually for the next job if the job that is releasing executors have the last stage to be processed.
+                        #     if job_ptr[1] == 1 and stage_mask[0] == False:
+                        #         obs["DRA_exec_cap"][selected_job_idx] = self.num_executors
+
+                        if obs["exec_supplies"][selected_job_idx] >= obs["DRA_exec_cap"][selected_job_idx]:
+                            job_cpt[selected_job_idx] = np.inf
+                            continue
+
+                    if job_cpt[min(job_cpt)] == np.inf:
+                        selected_job_idx = min(job_cpt, key=job_cpt.get)
+                        obs["DRA_exec_cap"][selected_job_idx] = self.num_executors
+
+                    num_exec = min(obs["DRA_exec_cap"][selected_job_idx] - obs["exec_supplies"][selected_job_idx],
+                                   obs["num_committable_execs"]) - 1
+                else:
+                    selected_job_idx = min(job_cpt, key=job_cpt.get)
+
+                # for job in range(num_active_jobs):
+                #     selected_job_idx = min(job_cpt,key = job_cpt.get)
+                #     if self.resource_allocation == 'DRA':
+                #         if obs["DRA_exec_cap"][selected_job_idx] < self.num_executors:
+                #             # increase DRA exec_cap manually for the next job if the job that is releasing executors have the last stage to be processed.
+                #             if job_ptr[1] == 1 and stage_mask[0] == False:
+                #                 obs["DRA_exec_cap"][selected_job_idx] = self.num_executors
+                #         if obs["exec_supplies"][selected_job_idx] >= obs["DRA_exec_cap"][selected_job_idx]:
+                #             job_cpt[selected_job_idx] = np.inf
+                #             continue
+                #     else:
+                #         break
+                # if job_cpt[min(job_cpt)] == np.inf:
+                #     #print("IN WSCPT: All job exec_cap are reached")
+                #     selected_job_idx = min(job_cpt,key = job_cpt.get)
+                #     obs["DRA_exec_cap"][selected_job_idx] = self.num_executors
+                #
+                # if self.resource_allocation == 'DRA':
+                #     num_exec = min(obs["DRA_exec_cap"][selected_job_idx] - obs["exec_supplies"][selected_job_idx],
+                #                    obs["num_committable_execs"]) - 1
 
             """searches for a schedulable stage in a given job, prioritizing a node with the longest cpt"""
             stage_idx_start = job_ptr[selected_job_idx]
             stage_idx_end = job_ptr[selected_job_idx + 1]
-            if max(masked_stages_cpt[stage_idx_start:stage_idx_end]) == 0:
-                print("masked_stages_children:",masked_stages_cpt)
-                print("job_ptr:", job_ptr)
-                print("selected_job_idx",selected_job_idx)
-                print(stage_idx_start,stage_idx_end)
 
             assert max(masked_stages_cpt[stage_idx_start:stage_idx_end]) > 0
             node_selected = np.argmax(masked_stages_cpt[stage_idx_start:stage_idx_end]) + stage_idx_start
             selected_stage_idx = schedulable_stages[node_selected]
-            num_exec = self.np_random.randint(0, num_committable_execs)
-            # print("-- WSCPT : num_committable_execs",num_committable_execs, "num_exec", num_exec)
+
             return {"stage_idx": selected_stage_idx, "num_exec": num_exec}
 
         else:

@@ -2,13 +2,14 @@ from .task import Task
 
 
 class Stage:
-    def __init__(self, id: int, job_id: int, num_tasks: int, rough_task_duration: int, cpt: float, num_children: int):
+    def __init__(self, id: int, job_id: int, num_tasks: int, task_duration: int, cpt: float, num_children: int):
         self.id_ = id
         self.job_id = job_id
-        self.most_recent_duration = rough_task_duration
+        #self.most_recent_duration = rough_task_duration
+        self.task_duration = task_duration
         self.num_tasks = num_tasks
         self.remaining_tasks = set(
-            Task(id_=i, stage_id=self.id_, job_id=self.job_id) for i in range(num_tasks)
+            Task(id_=i, stage_id=self.id_, job_id=self.job_id, duration= self.task_duration) for i in range(num_tasks)
         )
         self.num_remaining_tasks = num_tasks
         self.num_processing_tasks = 0

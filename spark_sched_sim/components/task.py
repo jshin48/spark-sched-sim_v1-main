@@ -11,6 +11,8 @@ class Task:
     executor_id: int = None
     t_accepted: float = np.inf
     t_completed: float = np.inf
+    duration: float = None
+    warmup_delay : float = None
 
     @property
     def __unique_id(self):

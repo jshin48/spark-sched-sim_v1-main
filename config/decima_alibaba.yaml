@@ -26,7 +26,7 @@ trainer:
 
   # if checkpointing_freq = n, then every n iterations, the best model from the
   # past m iterations is saved
-  checkpointing_freq: 10
+  checkpointing_freq: 50
 
   # if true, then records training metrics to a tensorboard file
   use_tensorboard: False
@@ -86,11 +86,9 @@ env:
   pod_creation_time: 100.
   data_sampler_cls: 'AlibabaDataSampler'
   mean_time_limit: 2.e+7
-  num_heuristics: 2
-  list_heuristics: ['MC','WSCPT']
-  num_resource_heuristics: 2
-  list_resource_heuristics: ['Maximum','DRA']
   # choose from 'Random', 'DNN', 'DRA', 'HyperHeuristic'
-  resource_allocation: 'HyperHeuristic'
+  resource_allocation : 'DNN'
+  num_resource_heuristics : 3
+  list_resource_heuristics : ['Maximum','DRA','fair']
   # choose from None, 'static' (integer), 'DTS'
-  splitting_rule: 'DTS'
+  splitting_rule : 'None' #'DTS','None' or integer

@@ -44,6 +44,8 @@ class Job:
         self.init_frontier()
 
         self.cpt = cpt
+
+        self.sample_type = "None" #which sampler is used to generate the job, ex)tpch, alibaba
     @property
     def pool_key(self):
         return (self.id_, None)
