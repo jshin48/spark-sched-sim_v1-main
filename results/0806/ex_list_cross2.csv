@@ -1,0 +1,3 @@
+id,scheduler_name,train_data,num_heuristics,resource_allocation,model_num_train,list_resource_heuristics,num_experiments,render_mode,model_name,test_data,job_arrival_rate,job_arrival_cap
+1,HyperHeuristicScheduler,MixDataSampler,2,DRA,30,,1,None,2_DRA_cap100_int20_exec20,AlibabaDataSampler,0.000125,100
+2,DecimaScheduler,MixDataSampler,2,DNN,30,,1,None,cap100_int20_exec20,AlibabaDataSampler,0.000125,100

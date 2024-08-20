@@ -1,0 +1,10 @@
+trainer,agent,agent,env,env,env,agent,agent,trainer,trainer,env
+num_iterations,agent_cls,input_feature,data_sampler_cls,job_arrival_cap,job_arrival_rate,num_heuristics,resource_allocation,checkpointing_freq,artifacts_dir,num_executors
+200,HyperHeuristicScheduler,"[""num_queue"",""glob""]",AlibabaDataSampler,100,0.000125,2,DRA,20,2_DRA_cap100_int8_feature2,20
+200,HyperHeuristicScheduler,"[""num_queue"",""glob"",""cpt_mean"",""cpt_var""]",AlibabaDataSampler,100,0.000125,2,DRA,20,2_DRA_cap100_int8_feature4,20
+200,HyperHeuristicScheduler,"[""num_queue"",""glob"",""cpt_mean"",""cpt_var"",""children_mean"",""children_var""]",AlibabaDataSampler,100,0.000125,2,DRA,20,2_DRA_cap100_int8_feature6,20
+200,HyperHeuristicScheduler,"[""num_queue"",""glob""]",AlibabaDataSampler,100,0.000125,5,DRA,20,5_DRA_cap100_int8_feature2,20
+200,HyperHeuristicScheduler,"[""num_queue"",""glob"",""cpt_mean"",""cpt_var""]",AlibabaDataSampler,100,0.000125,5,DRA,20,5_DRA_cap100_int8_feature4,20
+200,HyperHeuristicScheduler,"[""num_queue"",""glob"",""cpt_mean"",""cpt_var"",""children_mean"",""children_var""]",AlibabaDataSampler,100,0.000125,5,DRA,20,5_DRA_cap100_int8_feature6,20
+,,,,,,,,,,
+,,,,,,,,,,
