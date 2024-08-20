@@ -4,10 +4,6 @@ import gymnasium.spaces as sp
 
 from .. import graph_utils as utils
 
-
-#NUM_NODE_FEATURES = 7
-
-
 class NeuralActWrapper(ActionWrapper):
     """converts a neural scheduler's actions to the environment's format"""
 

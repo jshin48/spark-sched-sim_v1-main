@@ -1,11 +1,11 @@
 from cfg_loader import load
 from trainers import make_trainer
-import time,csv
+import time,csv,ast
 
 if __name__ == "__main__":
     cfg = load('config/hyperheuristic_tpch.yaml')
 
-    with open("results/0806/train_list.csv") as f:
+    with open("results/0816/train_list_feature.csv") as f:
         reader = csv.reader(f)
         lines = list(reader)
 
@@ -14,8 +14,8 @@ if __name__ == "__main__":
 
     for line in lines[2:]:
         curr_time = time.time()
-        line=[int(line[0]),str(line[1]),str(line[2]),int(line[3]),float(line[4]),
-              int(line[5]),str(line[6]),str(line[7]),int(line[8]),str(line[9]),int(line[10])]
+        line=[int(line[0]),str(line[1]),ast.literal_eval(str(line[2])),str(line[3]),int(line[4]),float(line[5]),
+              int(line[6]),str(line[7]),int(line[8]),str(line[9]),int(line[10])]
         for i in range(len(line)):
             cfg[cat1[i]][cat2[i]]=line[i]
         cfg['trainer']['artifacts_dir'] = "models/"+str(cfg['agent']['agent_cls'])\

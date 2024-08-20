@@ -35,7 +35,7 @@ class SparkSchedSimEnv(Env):
 
     metadata = {"render_modes": ["human"], "render_fps": RENDER_FPS}
 
-    def __init__(self, env_cfg):
+    def __init__(self, env_cfg, agent_cfg):
         # number of simulated executors. More executors means a higher possible
         # level of parallelism.
         self.num_executors = env_cfg["num_executors"]
@@ -85,11 +85,11 @@ class SparkSchedSimEnv(Env):
         self.job_duration_buff = deque(maxlen=200)
 
         #JS Added
-        self.agent_cls = env_cfg["agent_cls"]
+        self.agent_cls = agent_cfg["agent_cls"]
         if self.agent_cls == 'HyperHeuristicScheduler' or self.agent_cls == 'HybridHeuristicScheduler':
-            self.num_heuristics = env_cfg["num_heuristics"]
-            self.list_heuristics = env_cfg["list_heuristics"]
-            self.num_resource_heuristics = env_cfg["num_resource_heuristics"]
+            self.num_heuristics = agent_cfg["num_heuristics"]
+            self.list_heuristics = agent_cfg["list_heuristics"]
+            self.num_resource_heuristics = agent_cfg["num_resource_heuristics"]
             self.NUM_NODE_FEATURES = 7
         elif self.agent_cls == 'DecimaScheduler':
             self.num_heuristics = 1 #Dummy value

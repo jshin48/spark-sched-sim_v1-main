@@ -6,6 +6,7 @@ from pprint import pprint
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 import gymnasium as gym
 import pathlib, sys
+import pandas as pd
 
 from cfg_loader import load
 from spark_sched_sim.schedulers import (
@@ -17,40 +18,52 @@ from spark_sched_sim.wrappers import NeuralActWrapper
 from spark_sched_sim import metrics
 from param import *
 
-args.input_file = './results/0806/ex_list_cross.csv'
-args.result_folder = './results/0806/'
+args.input_file = './results/0816/ex_list_cross.csv'
+args.result_folder = './results/0816/'
 args.output_file = 'result_ex_list_cross.csv'
 CFG = load(filename=os.path.join("config", "hyperheuristic_tpch.yaml"))
 
 def main():
+    # with open(args.input_file) as f:
+    #     reader = csv.reader(f)
+    #     lines = list(reader)
+    #     parameters_set = []
+    #     par_name = lines[0:][0]
+    #     for line in lines[1:]:
+    #         parameters_set.append(line)
     with open(args.input_file) as f:
-        reader = csv.reader(f)
-        lines = list(reader)
-        parameters_set = []
-        par_name = lines[0:][0]
-        for line in lines[1:]:
-            parameters_set.append(line)
-
-    #print(parameters_set)
+        df = pd.read_csv(f)
 
     if not os.path.exists(args.result_folder):
         os.makedirs(args.result_folder)
 
     f = open(args.result_folder + args.output_file, 'w', encoding='UTF8', newline='')
     writer = csv.writer(f)
-    writer.writerow(par_name+["avg_job_duration"])
+    writer.writerow(list(df)+["avg_job_duration"])
 
+    # for ex_id, par_value in enumerate(parameters_set):
+    #     result_set = []
+    #     param_upate(par_name,par_value)
+    #     pprint(vars(args))
+    #     print("parameter:",par_value)
+    #     for ex_num in range(args.num_experiments):
+    #         result = example(ex_id,ex_num)
+    #         result_set.append(result)
+    #
+    #     writer.writerow(par_value+result_set)
 
-    for ex_id, par_value in enumerate(parameters_set):
+    #df.drop(["id"], axis=1, inplace=True)
+    #df=df.astype({'splitting_rule': 'object'})
+    print(df.dtypes)
+
+    for i in range(len(df)):
         result_set = []
-        param_upate(par_name,par_value)
+        param_upate(list(df),list(df.iloc[i]))
         pprint(vars(args))
-        print("parameter:",par_value)
         for ex_num in range(args.num_experiments):
-            result = example(ex_id,ex_num)
+            result = example(i,ex_num)
             result_set.append(result)
 
-        writer.writerow(par_value+result_set)
 
 def example(ex_id,ex_num):
     agent_cfg = CFG["agent"] | {"num_executors": args.num_executors,

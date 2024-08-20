@@ -9,7 +9,11 @@ import json
 import pathlib
 import time
 
+import matplotlib
+matplotlib.use('TkAgg')
+
 import numpy as np
+import matplotlib.pyplot as plt
 import torch
 from multiprocessing import Pipe, Process, Lock
 from torch.utils.tensorboard import SummaryWriter
@@ -69,24 +73,30 @@ class Trainer(ABC):
             env_cfg |= {"beta": beta}
             self.return_calc = ReturnsCalculator(beta=beta)
 
-        if agent_cfg["agent_cls"] == 'HyperHeuristicScheduler':
-            self.agent_cfg = (
+        self.agent_cfg = (
                 agent_cfg
                 | {"num_executors": env_cfg["num_executors"]}
                 | {k: train_cfg[k] for k in ["opt_cls", "opt_kwargs", "max_grad_norm"]}
-                | {"num_heuristics": env_cfg["num_heuristics"]}
-                | {"list_heuristics": env_cfg["list_heuristics"]}
-                | {"resource_allocation": env_cfg["resource_allocation"]}
-                | {"num_resource_heuristics": env_cfg["num_resource_heuristics"]}
-                | {"list_resource_heuristics": env_cfg["list_resource_heuristics"]}
-            )
-        else:
-            self.agent_cfg = (
-                    agent_cfg
-                    | {"num_executors": env_cfg["num_executors"]}
-                    | {k: train_cfg[k] for k in ["opt_cls", "opt_kwargs", "max_grad_norm"]}
-                     | {"resource_allocation": env_cfg["resource_allocation"]}
-            )
+        )
+
+        # if agent_cfg["agent_cls"] == 'HyperHeuristicScheduler':
+        #     self.agent_cfg = (
+        #         agent_cfg
+        #         | {"num_executors": env_cfg["num_executors"]}
+        #         | {k: train_cfg[k] for k in ["opt_cls", "opt_kwargs", "max_grad_norm"]}
+        #         # | {"num_heuristics": env_cfg["num_heuristics"]}
+        #         # | {"list_heuristics": env_cfg["list_heuristics"]}
+        #         # | {"resource_allocation": env_cfg["resource_allocation"]}
+        #         # | {"num_resource_heuristics": env_cfg["num_resource_heuristics"]}
+        #         # | {"list_resource_heuristics": env_cfg["list_resource_heuristics"]}
+        #     )
+        # else:
+        #     self.agent_cfg = (
+        #             agent_cfg
+        #             | {"num_executors": env_cfg["num_executors"]}
+        #             | {k: train_cfg[k] for k in ["opt_cls", "opt_kwargs", "max_grad_norm"]}
+        #              # | {"resource_allocation": env_cfg["resource_allocation"]}
+        #     )
         self.agent = make_scheduler(self.agent_cfg)
         assert isinstance(self.agent, NeuralScheduler), "scheduler must be trainable."
 
@@ -110,6 +120,21 @@ class Trainer(ABC):
         past_comp_time = time.time()
         training_time = []
         all_job_duration = []
+
+        # Initialize lists to store epoch numbers and rewards
+        epochs = []
+        rewards = []
+
+        # Initialize the plot
+        plt.ion()  # Turn on interactive mode
+        fig, ax = plt.subplots()
+        line, = ax.plot([], [], 'b-', marker='o')
+        ax.set_xlim(0, 100)  # Set x-axis limits
+        ax.set_ylim(0, 1)  # Set y-axis limits
+        ax.set_xlabel('Epoch')
+        ax.set_ylabel('Reward')
+        ax.set_title('Training Reward Over Time')
+
         for i in range(self.num_iterations):
             actor_sd = deepcopy(self.agent.actor.state_dict())
             # # move params to GPU for learning
@@ -167,9 +192,15 @@ class Trainer(ABC):
                 f"Avg. job duration: " f"{avg_job_dur:.1f}",
                 flush=True,
             )
+            epochs.append(i)
+            rewards.append(avg_job_dur)
+            self._update_plot(ax, line, plt, epochs, rewards)
             past_comp_time = curr_comp_time
             all_job_duration.append(avg_job_dur)
         print("all_job_duration",all_job_duration)
+        plt.ioff()  # Turn off interactive mode
+        plt.savefig(str(self.artifacts_dir)+'.png', format='png')  # Save as PNG file
+        #plt.show()  # Display the final plot
         self._cleanup()
 
     @abstractmethod
@@ -332,3 +363,14 @@ class Trainer(ABC):
 
         for name, stat in episode_stats.items():
             self.summary_writer.add_scalar(name, stat, epoch)
+
+
+    def _update_plot(self, ax, line, plt, epochs, rewards):
+        line.set_data(epochs, rewards)
+
+        # Update x and y limits if necessary
+        ax.set_xlim(0, max(epochs) if epochs else 100)
+        ax.set_ylim(0, max(rewards) if rewards else 1)
+
+        plt.draw()
+        plt.pause(0.01)  # Pause to allow the plot to update

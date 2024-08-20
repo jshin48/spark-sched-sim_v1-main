@@ -1,7 +1,7 @@
 trainer:
   # where the training happens (cpu, cuda, cuda:0, ...)
   # note: rollouts are always collected using only the CPU
-  device: 'cpu' #JS:500
+  device: 'cuda' #JS:500
 
   # name of the trainer's class
   trainer_cls: 'PPO'
@@ -75,6 +75,10 @@ agent:
   policy_mlp_kwargs:
     hid_dims: [64, 64]
     act_cls: 'Tanh'
+  # choose from 'Random', 'DNN', 'DRA', 'HyperHeuristic'
+  resource_allocation: 'DNN'
+  # choose from None, 'static' (integer), 'DTS'
+  splitting_rule: 'None' #'DTS','None' or integer
 
 
 env:
@@ -86,5 +90,4 @@ env:
   pod_creation_time: 100.
   data_sampler_cls: 'TPCHDataSampler'
   mean_time_limit: 2.e+7
-  resource_allocation : 'DNN'
-  splitting_rule : 'None'
+

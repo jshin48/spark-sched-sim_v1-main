@@ -4,7 +4,7 @@ from torch_scatter import segment_csr
 import torch_geometric.utils as pyg_utils
 import torch_sparse
 
-from .neural import NeuralScheduler, StagePolicyNetwork, ExecPolicyNetwork, make_mlp , HeuristicPolicyNetwork, ResourcePolicyNetwork,HeuristicPolicyNetwork2
+from .neural import NeuralScheduler, ExecPolicyNetwork, make_mlp , HeuristicPolicyNetwork, ResourcePolicyNetwork
 from spark_sched_sim.wrappers import DAGNNObsWrapper
 from spark_sched_sim import graph_utils
 
@@ -21,9 +21,10 @@ class HyperHeuristicScheduler(NeuralScheduler):
         opt_cls=None,
         opt_kwargs=None,
         max_grad_norm=None,
-        num_node_features=7,
-        num_dag_features=3,
-        num_heuristics= 2,
+        num_node_features = 7,
+        num_dag_features = 3,
+        num_heuristics = 2,
+        input_feature = ['num_queue',"glob"],
         list_heuristics= ['FIFO', 'MC'],
         num_resource_heuristics= 3,
         list_resource_heuristics= ['FIFO', 'Fair'],
@@ -43,8 +44,10 @@ class HyperHeuristicScheduler(NeuralScheduler):
             policy_mlp_kwargs,
             num_heuristics,
             list_heuristics,
+            input_feature,
             num_resource_heuristics,
-            list_resource_heuristics
+            list_resource_heuristics,
+            resource_allocation
         )
 
         obs_wrapper_cls = DAGNNObsWrapper
@@ -58,11 +61,11 @@ class HyperHeuristicScheduler(NeuralScheduler):
             opt_cls,
             opt_kwargs,
             max_grad_norm,
-            resource_allocation,
-            num_resource_heuristics,
-            list_resource_heuristics,
             num_heuristics,
             list_heuristics,
+            num_resource_heuristics,
+            list_resource_heuristics,
+            resource_allocation,
         )
 
 
@@ -77,8 +80,10 @@ class ActorNetwork(nn.Module):
         policy_mlp_kwargs,
         num_heuristics,
         list_heuristics,
+        input_feature,
         num_resource_heuristics,
-        list_resource_heuristics
+        list_resource_heuristics,
+        resource_allocation
     ):
         super().__init__()
         self.encoder = EncoderNetwork(num_node_features, embed_dim, gnn_mlp_kwargs)
@@ -95,20 +100,18 @@ class ActorNetwork(nn.Module):
         #     num_node_features, emb_dims, policy_mlp_kwargs
         # )
 
-        self.exec_policy_network = ExecPolicyNetwork(
-            num_executors, num_dag_features, emb_dims, policy_mlp_kwargs
-        )
-
         self.heuristic_policy_network = HeuristicPolicyNetwork(
-            self.embedding_model, num_heuristics, list_heuristics, emb_dims, policy_mlp_kwargs
+            self.embedding_model, num_heuristics, list_heuristics, input_feature, emb_dims, policy_mlp_kwargs
         )
 
-        self.heuristic_policy_network2 = HeuristicPolicyNetwork2(
-            self.embedding_model, num_heuristics, list_heuristics, emb_dims, policy_mlp_kwargs)
-
-        self.resource_heuristic_policy_network = ResourcePolicyNetwork(
-            num_resource_heuristics, list_resource_heuristics,
-            num_executors, num_dag_features, emb_dims, policy_mlp_kwargs)
+        if resource_allocation == "DNN":
+            self.exec_policy_network = ExecPolicyNetwork(
+                num_executors, num_dag_features, emb_dims, policy_mlp_kwargs
+            )
+        elif resource_allocation == "HyperHeuristic":
+            self.resource_heuristic_policy_network = ResourcePolicyNetwork(
+                self.embedding_model, num_resource_heuristics, list_resource_heuristics,
+                num_executors, num_dag_features, emb_dims, policy_mlp_kwargs)
 
         self._reset_biases()
 
@@ -222,7 +225,7 @@ class DagEncoder(nn.Module):
         # include original input
         h_node = torch.cat([dag_batch.x, h_node], dim=1)
         h_node_matrix = self.mlp(h_node)  #dim : num_node x output_dim=embed_dim
-        h_dag = segment_csr(h_node_matrix, dag_batch.ptr) #sum h_node_matrix value over all nodes in the same dag, dim: num_dag x output_dim
+        h_dag = segment_csr(h_node_matrix, dag_batch.ptr) #sum h_node_matrix value over all nodes (sum rows) in the same dag, dim: num_dag x output_dim
         return h_dag
 
 

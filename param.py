@@ -41,4 +41,4 @@ args = parser.parse_args()
 def param_upate(par_name,par_value):
     for i in range(len(par_name)):
         if par_value[i] != "":
-            vars(args)[par_name[i]]=ast.literal_eval(par_value[i])
+            vars(args)[par_name[i]]=par_value[i]

@@ -35,11 +35,11 @@ class NeuralScheduler(Scheduler):
         opt_cls,
         opt_kwargs,
         max_grad_norm,
-        resource_allocation='Random',
-        num_resource_heuristics=2,
-        list_resource_heuristics=['example1', 'example2'],
         num_heuristics= 2,
         list_heuristics = ['example1','example2'],
+        num_resource_heuristics= 2,
+        list_resource_heuristics= ['example1', 'example2'],
+        resource_allocation = 'Random'
         ):
         super().__init__(name)
 
@@ -205,11 +205,9 @@ class NeuralScheduler(Scheduler):
                 stage_scores.cpu(), num_stage_acts, stage_selections)
             action_lgprobs += stage_lgprobs
             action_entropies += stage_entropies
-        elif self.name == "HyperHeuristic" or self.name == "HyperHeuristic_2":
+        elif self.name == "HyperHeuristic":
             if self.name == "HyperHeuristic":
                 heuristic_score = self.actor.heuristic_policy_network(dag_batch,h_dict)
-            if self.name == "HyperHeuristic2":
-                heuristic_score = self.actor.heuristic_policy_network2(dag_batch,h_dict)
             heuristic_lgprobs, heuristic_entropies = self._evaluate(
                 heuristic_score.cpu(), torch.tensor([self.num_heuristics] * len(job_indices)), heuristic_selections)
             action_lgprobs += heuristic_lgprobs
@@ -371,18 +369,13 @@ class ExecPolicyNetwork(nn.Module):
 
         # residual connections to original features
         x_h_dag = torch.cat([x_dag, h_dag], dim=1)
-
         x_h_dag_rpt = x_h_dag.repeat_interleave(
-            num_exec_acts, output_size=exec_actions.shape[0], dim=0
-        )
-
+            num_exec_acts, output_size=exec_actions.shape[0], dim=0)
         h_glob_rpt = h_dict["glob"].repeat_interleave(
-            num_exec_acts, output_size=exec_actions.shape[0], dim=0
-        )
-
+            num_exec_acts, output_size=exec_actions.shape[0], dim=0)
         dag_inputs = torch.cat([x_h_dag_rpt, h_glob_rpt, exec_actions], dim=1)
-
         dag_scores = self.mlp_score(dag_inputs).squeeze(-1)
+
         return dag_scores
 
     def _get_exec_actions(self, exec_mask):
@@ -394,59 +387,82 @@ class ExecPolicyNetwork(nn.Module):
         return exec_actions
 
 class HeuristicPolicyNetwork(nn.Module):
-    def __init__(
-        self,
-        embedding_model,
-        num_heuristics,
-        list_heuristics,
-        emb_dims,
-        mlp_kwargs
-    ):
+    def __init__(self, embedding_model, num_heuristics,
+        list_heuristics, input_feature, emb_dims, mlp_kwargs):
+
         super().__init__()
         self.num_heuristics = num_heuristics
         self.list_heuristics = list_heuristics
-        #self.embedding_model = HeuristicEmbeddingModel(num_heuristics, emb_dims['heuristic'])
         self.embedding_model = embedding_model
+        self.input_feature = input_feature
 
-        # Utilize all available information
-        input_dim = 1 + emb_dims['heuristic'] #1 + emb_dims['glob'] + emb_dims['heuristic']
+        self.total_feature_list = ["num_queue","glob","cpt_mean","cpt_var","children_mean","children_var"]
+        feature_in_use = [feature in self.input_feature for feature in self.total_feature_list]
+        dim_feature_list = [1, emb_dims['glob'], 1,1,1,1]
+        input_dim = sum(dim for dim, use in zip(dim_feature_list, feature_in_use) if use) + emb_dims['heuristic']
+
         self.mlp_score = make_mlp(input_dim, output_dim=1, **mlp_kwargs)
 
     def forward(self, dag_batch, h_dict):
-        h_glob_rpt = h_dict['glob'].repeat_interleave(
-            self.num_heuristics, dim=0)
-        num_queue = torch.sum(dag_batch["stage_mask"]).repeat(h_glob_rpt.shape[0],1)
+        input_matrix = []
+        if "glob" in self.input_feature:
+            h_glob_rpt = h_dict['glob'].repeat_interleave(self.num_heuristics, dim=0)
+            input_matrix.append(h_glob_rpt)
+
+        if "num_queue" in self.input_feature:
+            num_queue = torch.sum(dag_batch["stage_mask"]).repeat(h_glob_rpt.shape[0],1)
+            input_matrix.append(num_queue)
+
+        if "cpt_mean" in self.input_feature or "cpt_var" in self.input_feature:
+            stage_mask = dag_batch["stage_mask"].bool()
+            stage_cpt = dag_batch.x[:,5]
+
+            masked_stages_cpt = stage_cpt[stage_mask]
+
+            if "cpt_mean" in self.input_feature:
+                mean_cpt = torch.mean(masked_stages_cpt).repeat(h_glob_rpt.shape[0],1)
+                input_matrix.append(mean_cpt)
+            if "cpt_var" in self.input_feature:
+                var_cpt = torch.std(masked_stages_cpt).repeat(h_glob_rpt.shape[0],1)
+                input_matrix.append(var_cpt)
+
+        if "children_mean" in self.input_feature or "children_var" in self.input_feature:
+            stage_mask = dag_batch["stage_mask"].bool()
+            stage_children = dag_batch.x[:,6]
+
+            masked_stages_children = stage_children[stage_mask ]
+
+            if "children_mean" in self.input_feature:
+                mean_children = torch.mean(masked_stages_children).repeat(h_glob_rpt.shape[0],1)
+                input_matrix.append(mean_children)
+            if "children_var" in self.input_feature:
+                var_children = torch.std(masked_stages_children).repeat(h_glob_rpt.shape[0],1)
+                input_matrix.append(var_children)
+
+        #print("input_matrix:",torch.cat(input_matrix, dim=1))
         action_indices = torch.LongTensor(range(self.num_heuristics))
         heuristic_actions = self.embedding_model(action_indices)
         heuristic_actions = heuristic_actions.repeat_interleave(h_dict['glob'].shape[0], output_size=h_glob_rpt.shape[0], dim=0)
+        input_matrix.append(heuristic_actions)
 
         # residual connections to original features
-        #status_inputs = torch.cat([num_queue, h_glob_rpt, heuristic_actions], dim=1)
-        status_inputs = torch.cat([num_queue, heuristic_actions], dim=1)
+        status_inputs = torch.cat(input_matrix, dim=1)
 
         heuristic_scores = self.mlp_score(status_inputs).squeeze(-1)
         #print("heuristic_actions",heuristic_actions)
         #print("num_queue:",num_queue[0][0].item(),",heuristic_scores:",heuristic_scores)
         return heuristic_scores
 
-class HeuristicEmbeddingModel(nn.Module):
-    def __init__(self, action_size, embedding_dim):
-        super().__init__()
-        self.embedding = nn.Embedding(action_size, embedding_dim)
-
-    def forward(self, action_indices):
-        return self.embedding(action_indices)
-
 
 class ResourcePolicyNetwork(nn.Module):
-    def __init__(self, num_resource_heuristics, list_resource_heuristics,
+    def __init__(self, embedding_model, num_resource_heuristics, list_resource_heuristics,
                  num_executors, num_dag_features, emb_dims, mlp_kwargs):
         super().__init__()
         self.num_executors = num_executors
         self.num_dag_features = num_dag_features
         self.num_resource_heuristics = num_resource_heuristics
         self.list_resource_heuristics = list_resource_heuristics
-        self.embedding_model = HeuristicEmbeddingModel(num_resource_heuristics, emb_dims['heuristic'])
+        self.embedding_model = embedding_model
 
         input_dim = num_dag_features + emb_dims["dag"] + emb_dims["glob"] + emb_dims["heuristic"]
         self.mlp_score = make_mlp(input_dim, output_dim=1, **mlp_kwargs)
@@ -481,41 +497,5 @@ class ResourcePolicyNetwork(nn.Module):
         resource_heuristic_scores = self.mlp_score(status_inputs).squeeze(-1)
         return resource_heuristic_scores
 
-
-class HeuristicPolicyNetwork2(nn.Module):
-    def __init__(
-        self,
-        embedding_model,
-        num_heuristics,
-        list_heuristics,
-        emb_dims,
-        mlp_kwargs
-    ):
-        super().__init__()
-        self.num_heuristics = num_heuristics
-        self.list_heuristics = list_heuristics
-        #self.embedding_model = HeuristicEmbeddingModel(num_heuristics, emb_dims['heuristic'])
-        self.embedding_model = embedding_model
-
-        # Utilize all available information
-        input_dim = 1+emb_dims['glob'] + emb_dims['heuristic']
-        self.mlp_score = make_mlp(input_dim, output_dim=1, **mlp_kwargs)
-
-    def forward(self, dag_batch, h_dict):
-        h_glob_rpt = h_dict['glob'].repeat_interleave(
-            self.num_heuristics, dim=0)
-        num_queue = torch.sum(dag_batch["stage_mask"]).repeat(h_glob_rpt.shape[0],1)
-        action_indices = torch.LongTensor(range(self.num_heuristics))
-        heuristic_actions = self.embedding_model(action_indices)
-        heuristic_actions = heuristic_actions.repeat_interleave(h_dict['glob'].shape[0], output_size=h_glob_rpt.shape[0], dim=0)
-
-        # residual connections to original features
-        status_inputs = torch.cat([num_queue, h_glob_rpt, heuristic_actions], dim=1)
-        #status_inputs = torch.cat([h_glob_rpt, heuristic_actions], dim=1)
-
-        heuristic_scores = self.mlp_score(status_inputs).squeeze(-1)
-        #print("heuristic_actions",heuristic_actions)
-        #print("heuristic_scores",heuristic_scores)
-        return heuristic_scores
 
 
