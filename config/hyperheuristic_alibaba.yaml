@@ -82,8 +82,7 @@ agent:
   list_resource_heuristics: [ 'Maximum','DRA' ]
   # choose from 'Random', 'DNN', 'DRA', 'HyperHeuristic'
   resource_allocation: 'DNN'
-  # choose from None, 'static' (integer), 'DTS'
-  splitting_rule: 'None' #'DTS'
+
 
 
 env:
@@ -95,4 +94,6 @@ env:
   pod_creation_time: 100.
   data_sampler_cls: 'AlibabaDataSampler'
   mean_time_limit: 2.e+8
+  # choose from None, 'static' (integer), 'DTS'
+  splitting_rule: 'None' #'DTS'
 

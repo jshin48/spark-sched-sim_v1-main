@@ -22,6 +22,7 @@ parser.add_argument('--model_num_train', type=int,default=100)
 # -- HyperHeuristic Scheduler -- #
 parser.add_argument('--num_heuristics', type=int, default=2)
 parser.add_argument('--list_heuristics', type=str, default=['MC','WSCPT'],nargs='+')
+parser.add_argument('--input_feature', type=str, default=['num_queue',"glob" ],nargs='+')
 
 # -- Resource allocation -- #
 parser.add_argument('--resource_allocation', type=str, default='HyperHeuristic', choices=['Random', 'DNN', 'DRA', 'HyperHeuristic'])

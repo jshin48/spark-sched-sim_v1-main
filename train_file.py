@@ -3,7 +3,7 @@ from trainers import make_trainer
 import time,csv,ast
 
 if __name__ == "__main__":
-    cfg = load('config/hyperheuristic_tpch.yaml')
+    cfg = load('config/hyperheuristic_alibaba.yaml')
 
     with open("results/0816/train_list_feature.csv") as f:
         reader = csv.reader(f)

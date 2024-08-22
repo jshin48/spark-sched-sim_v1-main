@@ -75,10 +75,9 @@ agent:
   policy_mlp_kwargs:
     hid_dims: [64, 64]
     act_cls: 'Tanh'
+  input_feature: ['num_queue',"glob" ]
   # choose from 'Random', 'DNN', 'DRA', 'HyperHeuristic'
   resource_allocation: 'DNN'
-  # choose from None, 'static' (integer), 'DTS'
-  splitting_rule: 'None' #'DTS','None' or integer
 
 
 env:
@@ -90,4 +89,6 @@ env:
   pod_creation_time: 100.
   data_sampler_cls: 'AlibabaDataSampler'
   mean_time_limit: 2.e+7
+  # choose from None, 'static' (integer), 'DTS'
+  splitting_rule: 'None' #'DTS','None' or integer
 
