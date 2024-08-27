@@ -1,11 +1,25 @@
+import argparse
 from cfg_loader import load
 from trainers import make_trainer
 import time,csv,ast
 
 if __name__ == "__main__":
-    cfg = load('config/hyperheuristic_alibaba.yaml')
+    
+    #cfg = load('config/hyperheuristic_alibaba.yaml')
+    #with open("results/0822/train_list_feature2.csv") as f:
+    
+    # Set up argument parser
+    parser = argparse.ArgumentParser(description='Process some file paths.')
+    parser.add_argument('config_path', type=str, help='Path to the configuration file')
+    parser.add_argument('csv_path', type=str, help='Path to the CSV file')
 
-    with open("results/0816/train_list_feature.csv") as f:
+    # Parse arguments
+    args = parser.parse_args()
+
+    # Load configuration
+    cfg = load(args.config_path)
+
+    with open(args.csv_path) as f:
         reader = csv.reader(f)
         lines = list(reader)
 

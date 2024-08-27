@@ -12,7 +12,7 @@ from .base_data_sampler import BaseDataSampler
 from ..components import Job, Stage
 
 QUERY_SIZES = ["j_10_test"]
-NUM_QUERIES = 28963
+NUM_QUERIES = 10000 #28963
 
 
 class AlibabaDataSampler(BaseDataSampler):

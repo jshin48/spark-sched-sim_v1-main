@@ -10,7 +10,7 @@ import pathlib
 import time
 
 import matplotlib
-matplotlib.use('TkAgg')
+#matplotlib.use('TkAgg')
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -126,7 +126,7 @@ class Trainer(ABC):
         rewards = []
 
         # Initialize the plot
-        plt.ion()  # Turn on interactive mode
+        #plt.ion()  # Turn on interactive mode
         fig, ax = plt.subplots()
         line, = ax.plot([], [], 'b-', marker='o')
         ax.set_xlim(0, 100)  # Set x-axis limits
@@ -194,13 +194,16 @@ class Trainer(ABC):
             )
             epochs.append(i)
             rewards.append(avg_job_dur)
-            self._update_plot(ax, line, plt, epochs, rewards)
             past_comp_time = curr_comp_time
             all_job_duration.append(avg_job_dur)
+
+            if (i + 1) % 10 == 0:
+                self._update_plot(ax, line, plt, epochs, rewards)
+                plt.savefig(str(self.artifacts_dir)+'.png', format='png')  # Save as PNG file
+
         print("all_job_duration",all_job_duration)
-        plt.ioff()  # Turn off interactive mode
-        plt.savefig(str(self.artifacts_dir)+'.png', format='png')  # Save as PNG file
-        #plt.show()  # Display the final plot
+        #plt.ioff()  # Turn off interactive mode
+        
         self._cleanup()
 
     @abstractmethod
