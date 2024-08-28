@@ -181,7 +181,6 @@ class NeuralScheduler(Scheduler):
     def evaluate_actions(self, dag_batch, actions):
         # split columns of `actions` into separate tensors
         # NOTE: columns need to be cloned to avoid in-place operation
-        #JS Revision
         heuristic_selections, resource_heuristic_selections, stage_selections, job_indices, exec_selections = \
             [col.clone() for col in actions.T]
 
@@ -206,8 +205,7 @@ class NeuralScheduler(Scheduler):
             action_lgprobs += stage_lgprobs
             action_entropies += stage_entropies
         elif self.name == "HyperHeuristic":
-            if self.name == "HyperHeuristic":
-                heuristic_score = self.actor.heuristic_policy_network(dag_batch,h_dict)
+            heuristic_score = self.actor.heuristic_policy_network(dag_batch,h_dict)
             heuristic_lgprobs, heuristic_entropies = self._evaluate(
                 heuristic_score.cpu(), torch.tensor([self.num_heuristics] * len(job_indices)), heuristic_selections)
             action_lgprobs += heuristic_lgprobs
@@ -228,6 +226,7 @@ class NeuralScheduler(Scheduler):
             action_lgprobs += resource_heuristic_lgprobs
             action_entropies += resource_heuristic_entropies
 
+        # Normalize entropies
         if self.name == "HyperHeuristic":
             action_entropies /= (self.num_executors * torch.tensor([self.num_heuristics * len(job_indices)])).log()
         else:
@@ -275,13 +274,13 @@ class NeuralScheduler(Scheduler):
         # clear accumulated gradients
         self.optim.zero_grad()
 
-        #updated_embeddings = self.actor.embedding_model.embedding.weight.data
+        # updated_embeddings = self.actor.embedding_model.embedding.weight.data
         # print(f"Initial embeddings: {initial_embeddings}")
         # print(f"Updated embeddings: {updated_embeddings}")
-
+        #
         # Check differences
-        #diff = updated_embeddings - initial_embeddings
-        #print(f"Difference in embeddings: {diff}")
+        # diff = updated_embeddings - initial_embeddings
+        # print(f"Difference in embeddings: {diff}")
 
 
 def make_mlp(input_dim, hid_dims, output_dim, act_cls, act_kwargs=None):
@@ -397,21 +396,29 @@ class HeuristicPolicyNetwork(nn.Module):
         self.input_feature = input_feature
 
         self.total_feature_list = ["num_queue","glob","cpt_mean","cpt_var","children_mean","children_var"]
+        self.num_queue_max = 1000
+        num_queue_emb_dim = 3
+        self.num_queue_embedding = nn.Embedding(self.num_queue_max + 1, num_queue_emb_dim)
+        #self.num_queue_embedding.weight.requires_grad = False
+        #print(self.num_queue_embedding.weight.requires_grad)
+
         feature_in_use = [feature in self.input_feature for feature in self.total_feature_list]
-        dim_feature_list = [1, emb_dims['glob'], 1,1,1,1]
+        dim_feature_list = [num_queue_emb_dim, emb_dims['glob'], 1,1,1,1]
         input_dim = sum(dim for dim, use in zip(dim_feature_list, feature_in_use) if use) + emb_dims['heuristic']
 
         self.mlp_score = make_mlp(input_dim, output_dim=1, **mlp_kwargs)
 
     def forward(self, dag_batch, h_dict):
         input_matrix = []
+
         if "glob" in self.input_feature:
             h_glob_rpt = h_dict['glob'].repeat_interleave(self.num_heuristics, dim=0)
             input_matrix.append(h_glob_rpt)
 
         if "num_queue" in self.input_feature:
-            num_queue = torch.sum(dag_batch["stage_mask"]).repeat(h_glob_rpt.shape[0],1)
-            input_matrix.append(num_queue)
+            num_queue = max(torch.sum(dag_batch["stage_mask"]),torch.tensor(self.num_queue_max)).long()
+            num_queue_emb = self.num_queue_embedding(num_queue).repeat(h_glob_rpt.shape[0], 1)
+            input_matrix.append(num_queue_emb)
 
         if "cpt_mean" in self.input_feature or "cpt_var" in self.input_feature:
             stage_mask = dag_batch["stage_mask"].bool()

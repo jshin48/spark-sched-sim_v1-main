@@ -95,10 +95,6 @@ class ActorNetwork(nn.Module):
         )
 
         emb_dims = {"resource_heuristic":embed_dim, "heuristic":embed_dim,"node": embed_dim, "dag": embed_dim, "glob": embed_dim}
-        #
-        # self.stage_policy_network = StagePolicyNetwork(
-        #     num_node_features, emb_dims, policy_mlp_kwargs
-        # )
 
         self.heuristic_policy_network = HeuristicPolicyNetwork(
             self.embedding_model, num_heuristics, list_heuristics, input_feature, emb_dims, policy_mlp_kwargs
@@ -252,7 +248,6 @@ class ComplexHeuristicEmbeddingModel(nn.Module):
         super().__init__()
         # Embedding layer
         self.embedding = nn.Embedding(action_size, embedding_dim)
-        #nn.init.uniform_(self.embedding.weight, -0.1, +0.1)
         nn.init.xavier_uniform_(self.embedding.weight)
 
         #print("*******Init embedding weight:",self.embedding.weight)
