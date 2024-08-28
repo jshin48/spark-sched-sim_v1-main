@@ -2,12 +2,37 @@ import argparse
 from cfg_loader import load
 from trainers import make_trainer
 import time,csv,ast
+import pandas as pd
+#usage : python3 train_file.py config/hyperheuristic_alibaba.yaml results/0822/train_list_feature.csv
+#usage : python3 train_file.py config/hyperheuristic_tpch.yaml results/0822/train_list_feature.csv
 
-if __name__ == "__main__":
-    
-    #cfg = load('config/hyperheuristic_alibaba.yaml')
-    #with open("results/0822/train_list_feature2.csv") as f:
-    
+def load_csv(csv_path):
+    with open(csv_path) as f:
+        reader = csv.reader(f)
+        lines = list(reader)
+    return lines
+
+def load_dataframe(csv_path):
+    with open(csv_path) as f:
+        df = pd.read_csv(f, skiprows=2, header=None)
+    return df
+
+def train_model(cfg, lines, df):
+    cat1 = lines[0]
+    cat2 = lines[1]
+
+    for i in range(len(df)):
+        curr_time = time.time()
+        for j in range(len(cat1)):
+            cfg[cat1[j]][cat2[j]] = df.iloc[i][j]
+        cfg['trainer']['artifacts_dir'] = "models/" + str(cfg['agent']['agent_cls']) \
+                                            + "/" + str(cfg['env']['data_sampler_cls']) \
+                                            + "/" + str(cfg['trainer']['artifacts_dir'])
+        print(cfg)
+        make_trainer(cfg).train()
+        print("Training time:", time.time() - curr_time)
+
+def main():
     # Set up argument parser
     parser = argparse.ArgumentParser(description='Process some file paths.')
     parser.add_argument('config_path', type=str, help='Path to the configuration file')
@@ -19,28 +44,12 @@ if __name__ == "__main__":
     # Load configuration
     cfg = load(args.config_path)
 
-    with open(args.csv_path) as f:
-        reader = csv.reader(f)
-        lines = list(reader)
+    # Load CSV file
+    lines = load_csv(args.csv_path)
+    df = load_dataframe(args.csv_path)
 
-    cat1 = lines[0]
-    cat2 = lines[1]
+    # Train model
+    train_model(cfg, lines, df)
 
-    for line in lines[2:]:
-        curr_time = time.time()
-        line=[int(line[0]),str(line[1]),ast.literal_eval(str(line[2])),str(line[3]),int(line[4]),float(line[5]),
-              int(line[6]),str(line[7]),int(line[8]),str(line[9]),int(line[10])]
-        for i in range(len(line)):
-            cfg[cat1[i]][cat2[i]]=line[i]
-        cfg['trainer']['artifacts_dir'] = "models/"+str(cfg['agent']['agent_cls'])\
-                                          +"/"+str(cfg['env']['data_sampler_cls'])\
-                                          +"/"+str(cfg['trainer']['artifacts_dir'])
-        print(cfg)
-        make_trainer(cfg).train()
-        print("Training time:", time.time()-curr_time)
-
-
-
-
-
-
+if __name__ == "__main__":
+    main()
