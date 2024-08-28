@@ -18,10 +18,10 @@ from spark_sched_sim.wrappers import NeuralActWrapper
 from spark_sched_sim import metrics
 from param import *
 
-args.input_file = './results/0816/ex_list_cross.csv'
-args.result_folder = './results/0816/'
-args.output_file = 'result_ex_list_cross200.csv'
-CFG = load(filename=os.path.join("config", "hyperheuristic_tpch.yaml"))
+args.input_file = './results/0822/ex_list.csv'
+args.result_folder = './results/0822/'
+args.output_file = 'result_hyper_alibaba.csv'
+CFG = load(filename=os.path.join("config", "hyperheuristic_alibaba.yaml"))
 
 def main():
     # with open(args.input_file) as f:

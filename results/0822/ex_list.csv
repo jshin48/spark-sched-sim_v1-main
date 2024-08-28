@@ -1,0 +1,5 @@
+id,scheduler_name,input_feature,train_data,job_arrival_cap,job_arrival_rate,num_heuristics,resource_allocation,model_num_train,model_name,num_executors,num_experiments,test_data
+1,HyperHeuristicScheduler,"[""num_queue"",""glob""]",AlibabaDataSampler,500,0.000125,2,DRA,10,2_DRA_cap500_int8_feature2,20,50,AlibabaDataSampler
+2,HyperHeuristicScheduler,"[""num_queue"",""glob""]",AlibabaDataSampler,500,0.000125,2,DRA,100,2_DRA_cap500_int8_feature2,20,50,AlibabaDataSampler
+3,HyperHeuristicScheduler,"[""num_queue"",""glob""]",AlibabaDataSampler,500,0.000125,2,DRA,200,2_DRA_cap500_int8_feature2,20,50,AlibabaDataSampler
+4,HyperHeuristicScheduler,"[""num_queue"",""glob""]",AlibabaDataSampler,500,0.000125,2,DRA,300,2_DRA_cap500_int8_feature2,20,50,AlibabaDataSampler
