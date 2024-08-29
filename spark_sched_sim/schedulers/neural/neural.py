@@ -416,7 +416,7 @@ class HeuristicPolicyNetwork(nn.Module):
             input_matrix.append(h_glob_rpt)
 
         if "num_queue" in self.input_feature:
-            num_queue = max(torch.sum(dag_batch["stage_mask"]),torch.tensor(self.num_queue_max)).long()
+            num_queue = min(torch.sum(dag_batch["stage_mask"]),torch.tensor(self.num_queue_max)).long()
             num_queue_emb = self.num_queue_embedding(num_queue).repeat(h_glob_rpt.shape[0], 1)
             input_matrix.append(num_queue_emb)
 

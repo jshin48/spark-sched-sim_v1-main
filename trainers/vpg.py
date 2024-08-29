@@ -52,6 +52,7 @@ class VPG(Trainer):
         self.agent.update_parameters()
 
         return {
+            "loss": loss.item(),
             "policy loss": np.mean(policy_losses),
             "entropy": np.mean(entropy_losses),
         }

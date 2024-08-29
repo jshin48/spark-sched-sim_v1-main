@@ -58,7 +58,6 @@ class Trainer(ABC):
         self.env_cfg = env_cfg
 
         self.baseline = Baseline(self.num_sequences, self.num_rollouts)
-
         self.rollout_duration = train_cfg.get("rollout_duration")
 
         assert ("reward_buff_cap" in train_cfg) ^ ("beta_discount" in train_cfg), (
@@ -78,28 +77,10 @@ class Trainer(ABC):
                 | {"num_executors": env_cfg["num_executors"]}
                 | {k: train_cfg[k] for k in ["opt_cls", "opt_kwargs", "max_grad_norm"]}
         )
-
-        # if agent_cfg["agent_cls"] == 'HyperHeuristicScheduler':
-        #     self.agent_cfg = (
-        #         agent_cfg
-        #         | {"num_executors": env_cfg["num_executors"]}
-        #         | {k: train_cfg[k] for k in ["opt_cls", "opt_kwargs", "max_grad_norm"]}
-        #         # | {"num_heuristics": env_cfg["num_heuristics"]}
-        #         # | {"list_heuristics": env_cfg["list_heuristics"]}
-        #         # | {"resource_allocation": env_cfg["resource_allocation"]}
-        #         # | {"num_resource_heuristics": env_cfg["num_resource_heuristics"]}
-        #         # | {"list_resource_heuristics": env_cfg["list_resource_heuristics"]}
-        #     )
-        # else:
-        #     self.agent_cfg = (
-        #             agent_cfg
-        #             | {"num_executors": env_cfg["num_executors"]}
-        #             | {k: train_cfg[k] for k in ["opt_cls", "opt_kwargs", "max_grad_norm"]}
-        #              # | {"resource_allocation": env_cfg["resource_allocation"]}
-        #     )
         self.agent = make_scheduler(self.agent_cfg)
         assert isinstance(self.agent, NeuralScheduler), "scheduler must be trainable."
 
+        self.loss = None
     def train(self):
         """trains the model on different job arrival sequences.
         For each job sequence:
@@ -153,7 +134,8 @@ class Trainer(ABC):
 
             # update parameters
             # with Profiler():
-            learning_stats = self.train_on_rollouts(rollout_buffers) #PPO (evaluate action & update model?)
+            learning_stats = self.train_on_rollouts(rollout_buffers) #PPO or VPG (evaluate action & update model)
+            self.loss = learning_stats["loss"]
 
             # # return params to CPU before scattering updated state dict
             # # to the rollout workers

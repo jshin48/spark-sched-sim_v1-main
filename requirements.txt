@@ -52,3 +52,5 @@ Werkzeug==2.3.7
 zipp==3.17.0
 
 yaml~=0.2.5
+matplotlib~=3.9.2
+pandas~=2.2.2

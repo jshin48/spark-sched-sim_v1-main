@@ -4,19 +4,19 @@ trainer:
   device: 'cpu'
 
   # name of the trainer's class
-  trainer_cls: 'PPO'
+  trainer_cls: 'VPG'#'PPO'
 
   # number of training iterations
-  num_iterations: 10
+  num_iterations: 1
 
   # number of unique job sequences sampled per training iteration
-  num_sequences: 2
+  num_sequences: 1
 
   # number of rollouts experienced per unique job sequence
   # `num_sequences` x `num_rollouts`
   #  = total number of rollouts per training iteration
   #  = number of rollout workers running in parallel
-  num_rollouts: 2
+  num_rollouts: 1
 
   # base random seed; each worker gets its own seed which is offset from this.
   seed: 42
@@ -67,7 +67,7 @@ agent:
   agent_cls: 'HyperHeuristicScheduler'
   embed_dim: 16
   gnn_mlp_kwargs:
-    hid_dims: [128, 64] #JS:42
+    hid_dims: [32,16] #[128, 64]
     act_cls: 'LeakyReLU'
     act_kwargs:
       inplace: True
@@ -86,8 +86,8 @@ agent:
 
 
 env:
-  num_executors: 100
-  job_arrival_cap: 200
+  num_executors: 20
+  job_arrival_cap: 100
   job_arrival_rate: 4.e-5
   moving_delay: 2000.
   warmup_delay: 1000.
