@@ -18,19 +18,12 @@ from spark_sched_sim.wrappers import NeuralActWrapper
 from spark_sched_sim import metrics
 from param import *
 
-args.input_file = './results/0822/ex_list.csv'
+args.input_file = './results/0822/ex_list_tpch_int8.csv'
 args.result_folder = './results/0822/'
-args.output_file = 'result_hyper_alibaba.csv'
-CFG = load(filename=os.path.join("config", "hyperheuristic_alibaba.yaml"))
+args.output_file = 'result_tpch_hyper_int8.csv'
+CFG = load(filename=os.path.join("config", "hyperheuristic_tpch.yaml"))
 
 def main():
-    # with open(args.input_file) as f:
-    #     reader = csv.reader(f)
-    #     lines = list(reader)
-    #     parameters_set = []
-    #     par_name = lines[0:][0]
-    #     for line in lines[1:]:
-    #         parameters_set.append(line)
     with open(args.input_file) as f:
         df = pd.read_csv(f)
 
@@ -63,6 +56,7 @@ def main():
         for ex_num in range(args.num_experiments):
             result = example(i,ex_num)
             result_set.append(result)
+        writer.writerow(list(df.iloc[i])+[result_set])
 
 
 def example(ex_id,ex_num):

@@ -398,12 +398,13 @@ class HeuristicPolicyNetwork(nn.Module):
         self.total_feature_list = ["num_queue","glob","cpt_mean","cpt_var","children_mean","children_var"]
         self.num_queue_max = 1000
         num_queue_emb_dim = 3
-        self.num_queue_embedding = nn.Embedding(self.num_queue_max + 1, num_queue_emb_dim)
+        #self.num_queue_embedding = nn.Embedding(self.num_queue_max + 1, num_queue_emb_dim)
         #self.num_queue_embedding.weight.requires_grad = False
         #print(self.num_queue_embedding.weight.requires_grad)
 
         feature_in_use = [feature in self.input_feature for feature in self.total_feature_list]
-        dim_feature_list = [num_queue_emb_dim, emb_dims['glob'], 1,1,1,1]
+        #dim_feature_list = [num_queue_emb_dim, emb_dims['glob'], 1,1,1,1]
+        dim_feature_list = [1, emb_dims['glob'], 1,1,1,1]
         input_dim = sum(dim for dim, use in zip(dim_feature_list, feature_in_use) if use) + emb_dims['heuristic']
 
         self.mlp_score = make_mlp(input_dim, output_dim=1, **mlp_kwargs)
@@ -417,7 +418,10 @@ class HeuristicPolicyNetwork(nn.Module):
 
         if "num_queue" in self.input_feature:
             num_queue = min(torch.sum(dag_batch["stage_mask"]),torch.tensor(self.num_queue_max)).long()
-            num_queue_emb = self.num_queue_embedding(num_queue).repeat(h_glob_rpt.shape[0], 1)
+            #num_queue_emb = self.num_queue_embedding(num_queue).repeat(h_glob_rpt.shape[0], 1)
+            
+            num_queue = torch.sum(dag_batch["stage_mask"]).long()
+            num_queue_emb = num_queue.repeat(h_glob_rpt.shape[0], 1)
             input_matrix.append(num_queue_emb)
 
         if "cpt_mean" in self.input_feature or "cpt_var" in self.input_feature:

@@ -8,10 +8,10 @@ losses = []
 
 if __name__ == "__main__":
     curr_time = time.time()
-    cfg = load('config/decima_tpch.yaml')
+    cfg = load('config/hyperheuristic_tpch.yaml')
 
     for i in range(10):
-        cfg['trainer']['opt_kwargs']['lr'] = 1e-5 * (10 ** (i))
+        cfg['trainer']['opt_kwargs']['lr'] = 1e-5 * (10 ** (i/10))
         print(cfg)
         Trainer = make_trainer(cfg)
         Trainer.train()
