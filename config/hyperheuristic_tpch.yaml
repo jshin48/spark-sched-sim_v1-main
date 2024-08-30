@@ -67,7 +67,7 @@ agent:
   agent_cls: 'HyperHeuristicScheduler'
   embed_dim: 16
   gnn_mlp_kwargs:
-    hid_dims: [128, 64]
+    hid_dims: [32, 16] #[128, 64]
     act_cls: 'LeakyReLU'
     act_kwargs:
       inplace: True

@@ -18,9 +18,9 @@ from spark_sched_sim.wrappers import NeuralActWrapper
 from spark_sched_sim import metrics
 from param import *
 
-args.input_file = './results/0822/ex_list_tpch_int8.csv'
+args.input_file = './results/0822/ex_hyper_tpch.csv'
 args.result_folder = './results/0822/'
-args.output_file = 'result_tpch_hyper_int8.csv'
+args.output_file = 'result_hyper_tpch.csv'
 CFG = load(filename=os.path.join("config", "hyperheuristic_tpch.yaml"))
 
 def main():

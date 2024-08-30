@@ -94,18 +94,11 @@ class NeuralScheduler(Scheduler):
             # 2. select a heuristic & retrieve information of the stage selected by the heuristic
             heuristic_score = self.actor.heuristic_policy_network(dag_batch,h_dict)
             # Ensure embeddings require gradients
-            # for name, param in self.actor.heuristic_policy_network.embedding_model.named_parameters():
-            #     if param.requires_grad:
-            #         if param.grad is not None:
-            #             print(f"Gradient for {name}: {param.grad.mean().item()}")
-            #         else:
-            #             print(f"No gradient computed for {name}")
-
             heuristic_idx, lgprob = self._sample(heuristic_score)
 
-            if heuristic_idx == 1:
+            if heuristic_idx == 0:
                 scheduler = McScheduler(self.num_executors, self.resource_allocation)
-            elif heuristic_idx == 0:
+            elif heuristic_idx == 1:
                 scheduler = WscptScheduler(self.num_executors, self.resource_allocation)
             elif heuristic_idx == 2:
                 scheduler = SjfScheduler(self.num_executors, self.resource_allocation)
@@ -165,18 +158,17 @@ class NeuralScheduler(Scheduler):
         return exp_logits / torch.sum(exp_logits)
 
     def _sample(self,logits):
-        pi = self.softmax_with_temperature(logits,temperature=0.1).detach().numpy()
-        #print("action probability:", [round(pi[0], 2), round(pi[1], 2)])
+        #pi = self.softmax_with_temperature(logits,temperature=0.1).detach().numpy()
+        pi = F.softmax(logits, 0).numpy()
+        # try:
+        #     pi_percentages = [int(p * 100) for p in pi]
+        # except ValueError:
+        #         print("Error: Unable to calculate action probabilities. logits:",logits)
+
+        #print("action probability:", pi_percentages)
         idx = random.choices(np.arange(pi.size), pi)[0]
         lgprob = np.log(pi[idx])
         return idx, lgprob
-
-    # def _sample(self, logits):
-    #     pi = F.softmax(logits, 0).numpy()
-    #     print("action probability:",[round(pi[0],2),round(pi[1],2)])
-    #     idx = random.choices(np.arange(pi.size), pi)[0]
-    #     lgprob = np.log(pi[idx])
-    #     return idx, lgprob
 
     def evaluate_actions(self, dag_batch, actions):
         # split columns of `actions` into separate tensors
@@ -247,7 +239,9 @@ class NeuralScheduler(Scheduler):
         return selection_log_probs, entropies
 
     def update_parameters(self, loss=None):
-        #initial_embeddings = self.actor.embedding_model.embedding.weight.data.clone()
+        initial_embeddings = self.actor.embedding_model.embedding.weight.data.clone()
+        initial_mlp_score_weights = self.actor.heuristic_policy_network.mlp_score[0].weight.data.clone()
+
         if loss:
             # accumulate gradients
             loss.backward()
@@ -274,14 +268,16 @@ class NeuralScheduler(Scheduler):
         # clear accumulated gradients
         self.optim.zero_grad()
 
-        # updated_embeddings = self.actor.embedding_model.embedding.weight.data
+        updated_embeddings = self.actor.embedding_model.embedding.weight.data
+        updated_mlp_score_weights = self.actor.heuristic_policy_network.mlp_score[0].weight.data
         # print(f"Initial embeddings: {initial_embeddings}")
         # print(f"Updated embeddings: {updated_embeddings}")
         #
         # Check differences
-        # diff = updated_embeddings - initial_embeddings
-        # print(f"Difference in embeddings: {diff}")
-
+        diff_embeddings = updated_embeddings - initial_embeddings
+        diff_mlp_score_weights = updated_mlp_score_weights - initial_mlp_score_weights
+        print(f"Difference in embeddings: {diff_embeddings}")
+        print(f"Difference in mlp_score weights: {diff_mlp_score_weights}")
 
 def make_mlp(input_dim, hid_dims, output_dim, act_cls, act_kwargs=None):
     if isinstance(act_cls, str):
@@ -398,13 +394,12 @@ class HeuristicPolicyNetwork(nn.Module):
         self.total_feature_list = ["num_queue","glob","cpt_mean","cpt_var","children_mean","children_var"]
         self.num_queue_max = 1000
         num_queue_emb_dim = 3
-        #self.num_queue_embedding = nn.Embedding(self.num_queue_max + 1, num_queue_emb_dim)
+        self.num_queue_embedding = nn.Embedding(self.num_queue_max + 1, num_queue_emb_dim)
         #self.num_queue_embedding.weight.requires_grad = False
         #print(self.num_queue_embedding.weight.requires_grad)
 
         feature_in_use = [feature in self.input_feature for feature in self.total_feature_list]
-        #dim_feature_list = [num_queue_emb_dim, emb_dims['glob'], 1,1,1,1]
-        dim_feature_list = [1, emb_dims['glob'], 1,1,1,1]
+        dim_feature_list = [num_queue_emb_dim, emb_dims['glob'], 1,1,1,1]
         input_dim = sum(dim for dim, use in zip(dim_feature_list, feature_in_use) if use) + emb_dims['heuristic']
 
         self.mlp_score = make_mlp(input_dim, output_dim=1, **mlp_kwargs)
@@ -418,10 +413,7 @@ class HeuristicPolicyNetwork(nn.Module):
 
         if "num_queue" in self.input_feature:
             num_queue = min(torch.sum(dag_batch["stage_mask"]),torch.tensor(self.num_queue_max)).long()
-            #num_queue_emb = self.num_queue_embedding(num_queue).repeat(h_glob_rpt.shape[0], 1)
-            
-            num_queue = torch.sum(dag_batch["stage_mask"]).long()
-            num_queue_emb = num_queue.repeat(h_glob_rpt.shape[0], 1)
+            num_queue_emb = self.num_queue_embedding(num_queue).repeat(h_glob_rpt.shape[0], 1)
             input_matrix.append(num_queue_emb)
 
         if "cpt_mean" in self.input_feature or "cpt_var" in self.input_feature:
