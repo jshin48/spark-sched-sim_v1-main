@@ -40,10 +40,10 @@ def train_model(cfg, lines, df):
 
 
 def main():
-    # Set up argument parser
+    # I want to either set up argument parser by receiving values or use the following hard-coded values
     parser = argparse.ArgumentParser(description='Process some file paths.')
-    parser.add_argument('config_path', type=str, help='Path to the configuration file')
-    parser.add_argument('csv_path', type=str, help='Path to the CSV file')
+    parser.add_argument('config_path', type=str, default='config/hyperheuristic_alibaba.yaml')
+    parser.add_argument('csv_path', type=str, default='results/0822/train_list_feature.csv')
 
     # Parse arguments
     args = parser.parse_args()

@@ -75,13 +75,13 @@ agent:
   policy_mlp_kwargs:
     hid_dims: [64, 64]
     act_cls: 'Tanh'
-  num_heuristics: 3
+  num_heuristics: 2
   list_heuristics: [ 'MC','WSCPT' ]
   input_feature: ['num_queue',"glob" ] #["num_queue","glob","cpt_mean","cpt_var","children_mean","children_var"]
   num_resource_heuristics: 2
   list_resource_heuristics: [ 'Maximum','DRA' ]
   # choose from 'Random', 'DNN', 'DRA', 'HyperHeuristic'
-  resource_allocation: 'DNN'
+  resource_allocation: 'DRA'
 
 
 

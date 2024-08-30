@@ -61,6 +61,8 @@ class NeuralScheduler(Scheduler):
 
         if self.name == "HyperHeuristic":
             self.heuristics_count = [0 for i in range(self.num_heuristics)]
+            self.same_action_count = 0
+            self.different_action_count = 0
 
         if self.resource_allocation == "HyperHeuristic":
             self.resource_heuristics_count = [0 for i in range(self.num_resource_heuristics)]
@@ -93,9 +95,7 @@ class NeuralScheduler(Scheduler):
         if self.name == "HyperHeuristic":
             # 2. select a heuristic & retrieve information of the stage selected by the heuristic
             heuristic_score = self.actor.heuristic_policy_network(dag_batch,h_dict)
-            # Ensure embeddings require gradients
             heuristic_idx, lgprob = self._sample(heuristic_score)
-
             if heuristic_idx == 0:
                 scheduler = McScheduler(self.num_executors, self.resource_allocation)
             elif heuristic_idx == 1:
@@ -111,6 +111,20 @@ class NeuralScheduler(Scheduler):
             self.heuristics_count[heuristic_idx] += 1
             action = scheduler(obs)
             stage_idx = action['stage_idx']
+
+            # Compare actions from MCScheduler and WSCPTScheduler
+            mc_scheduler = McScheduler(self.num_executors, self.resource_allocation)
+            wscpt_scheduler = WscptScheduler(self.num_executors, self.resource_allocation)
+            mc_action = mc_scheduler(obs)
+            wscpt_action = wscpt_scheduler(obs)
+
+            if mc_action == wscpt_action:
+                self.same_action_count += 1
+            else:
+                self.different_action_count += 1
+
+            print(f"Same actions: {self.same_action_count}, Different actions: {self.different_action_count}")
+
         else:
             stage_scores = self.actor.stage_policy_network(dag_batch, h_dict)
             stage_idx, lgprob = self._sample(stage_scores)
@@ -160,12 +174,12 @@ class NeuralScheduler(Scheduler):
     def _sample(self,logits):
         #pi = self.softmax_with_temperature(logits,temperature=0.1).detach().numpy()
         pi = F.softmax(logits, 0).numpy()
-        # try:
-        #     pi_percentages = [int(p * 100) for p in pi]
-        # except ValueError:
-        #         print("Error: Unable to calculate action probabilities. logits:",logits)
+        try:
+            pi_percentages = [int(p * 100) for p in pi]
+        except ValueError:
+                print("Error: Unable to calculate action probabilities. logits:",logits)
 
-        #print("action probability:", pi_percentages)
+        print("action probability:", pi_percentages)
         idx = random.choices(np.arange(pi.size), pi)[0]
         lgprob = np.log(pi[idx])
         return idx, lgprob
