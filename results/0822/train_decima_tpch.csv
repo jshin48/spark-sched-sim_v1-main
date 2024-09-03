@@ -1,3 +1,3 @@
 trainer,agent,env,env,env,agent,trainer,trainer,env
 num_iterations,agent_cls,data_sampler_cls,job_arrival_cap,job_arrival_rate,resource_allocation,checkpointing_freq,artifacts_dir,num_executors
-100,DecimaScheduler,TPCHDataSampler,100,0.000125,DNN,10,2_DRA_cap100_int8,20
+500,DecimaScheduler,TPCHDataSampler,100,2.08333E-05,DNN,10,cap100_int48_exec20_PPO,20

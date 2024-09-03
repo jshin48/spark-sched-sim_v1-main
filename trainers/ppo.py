@@ -75,6 +75,7 @@ class PPO(Trainer):
         return self._train(dataloader)
 
     def _train(self, dataloader):
+        total_losses = []
         policy_losses = []
         entropy_losses = []
         approx_kl_divs = []
@@ -92,6 +93,7 @@ class PPO(Trainer):
                     approx_kl_div,
                 ) = self._compute_loss(obsns, actions, advgs, old_lgprobs)
 
+                total_losses += [total_loss.item()]
                 policy_losses += [policy_loss]
                 entropy_losses += [entropy_loss]
                 approx_kl_divs.append(approx_kl_div)
@@ -107,6 +109,7 @@ class PPO(Trainer):
                 self.agent.update_parameters(total_loss)
 
         return {
+            "loss": np.abs(np.mean(total_losses)),
             "policy loss": np.abs(np.mean(policy_losses)),
             "entropy": np.abs(np.mean(entropy_losses)),
             "approx kl div": np.abs(np.mean(approx_kl_divs)),

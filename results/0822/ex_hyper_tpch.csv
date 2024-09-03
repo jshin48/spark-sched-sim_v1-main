@@ -1,5 +1,0 @@
-id,scheduler_name,input_feature,train_data,job_arrival_cap,job_arrival_rate,num_heuristics,resource_allocation,model_num_train,model_name,num_executors,num_experiments,test_data
-1,HyperHeuristicScheduler,"[""num_queue"",""glob""]",TPCHDataSampler,100,2.08333E-05,2,DRA,10,2_DRA_cap200_int48_feat2_lr5e-5_VPG,20,100,TPCHDataSampler
-2,HyperHeuristicScheduler,"[""num_queue"",""glob""]",TPCHDataSampler,100,2.08333E-05,2,DRA,100,2_DRA_cap200_int48_feat2_lr5e-5_VPG,20,100,TPCHDataSampler
-3,HyperHeuristicScheduler,"[""num_queue"",""glob""]",TPCHDataSampler,100,2.08333E-05,2,DRA,500,2_DRA_cap200_int48_feat2_lr5e-5_VPG,20,100,TPCHDataSampler
-4,HyperHeuristicScheduler,"[""num_queue"",""glob""]",TPCHDataSampler,100,2.08333E-05,2,DRA,1000,2_DRA_cap200_int48_feat2_lr5e-5_VPG,20,100,TPCHDataSampler

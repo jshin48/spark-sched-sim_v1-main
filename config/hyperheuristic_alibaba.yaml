@@ -59,7 +59,7 @@ trainer:
   # optimizer settings
   opt_cls: 'Adam'
   opt_kwargs: 
-    lr: 3.e-4
+    lr: 5.e-05  #3.e-4
   max_grad_norm: .5
 
 

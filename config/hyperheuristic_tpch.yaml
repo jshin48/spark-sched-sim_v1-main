@@ -4,7 +4,7 @@ trainer:
   device: 'cpu'
 
   # name of the trainer's class
-  trainer_cls: 'VPG' #'PPO'
+  trainer_cls: 'PPO'
 
   # number of training iterations
   num_iterations: 5

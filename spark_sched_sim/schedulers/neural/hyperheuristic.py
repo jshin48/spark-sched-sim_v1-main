@@ -91,7 +91,8 @@ class ActorNetwork(nn.Module):
             action_size=num_heuristics,
             embedding_dim=embed_dim,
             hidden_dim=64,  # Example hidden dimension size
-            dropout=0.1
+            dropout=0.1,
+
         )
 
         emb_dims = {"resource_heuristic":embed_dim, "heuristic":embed_dim,"node": embed_dim, "dag": embed_dim, "glob": embed_dim}
@@ -247,6 +248,7 @@ class ComplexHeuristicEmbeddingModel(nn.Module):
     def __init__(self, action_size, embedding_dim, hidden_dim, dropout=0.1):
         super().__init__()
         # Embedding layer
+        print("action_size, embedding_dim",action_size, embedding_dim)
         self.embedding = nn.Embedding(action_size, embedding_dim)
         nn.init.xavier_uniform_(self.embedding.weight)
 
@@ -256,7 +258,6 @@ class ComplexHeuristicEmbeddingModel(nn.Module):
         self.fc1 = nn.Linear(embedding_dim, hidden_dim)
         self.relu = nn.ReLU()
         self.fc2 = nn.Linear(hidden_dim, hidden_dim)
-        self.batch_norm = nn.BatchNorm1d(hidden_dim)
 
         # Dropout layer
         self.dropout = nn.Dropout(p=dropout)
@@ -272,7 +273,6 @@ class ComplexHeuristicEmbeddingModel(nn.Module):
         x = self.fc1(x)
         x = self.relu(x)
         x = self.fc2(x)
-        x = self.batch_norm(x)
         x = self.dropout(x)
 
         # Map back to original embedding dimension

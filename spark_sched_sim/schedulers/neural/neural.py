@@ -253,8 +253,8 @@ class NeuralScheduler(Scheduler):
         return selection_log_probs, entropies
 
     def update_parameters(self, loss=None):
-        initial_embeddings = self.actor.embedding_model.embedding.weight.data.clone()
-        initial_mlp_score_weights = self.actor.heuristic_policy_network.mlp_score[0].weight.data.clone()
+        # initial_embeddings = self.actor.embedding_model.embedding.weight.data.clone()
+        # initial_mlp_score_weights = self.actor.heuristic_policy_network.mlp_score[0].weight.data.clone()
 
         if loss:
             # accumulate gradients
@@ -282,18 +282,18 @@ class NeuralScheduler(Scheduler):
         # clear accumulated gradients
         self.optim.zero_grad()
 
-        updated_embeddings = self.actor.embedding_model.embedding.weight.data
-        updated_mlp_score_weights = self.actor.heuristic_policy_network.mlp_score[0].weight.data
+        # updated_embeddings = self.actor.embedding_model.embedding.weight.data
+        # updated_mlp_score_weights = self.actor.heuristic_policy_network.mlp_score[0].weight.data
         # print(f"Initial embeddings: {initial_embeddings}")
         # print(f"Updated embeddings: {updated_embeddings}")
         #
         # Check differences
-        diff_embeddings = updated_embeddings - initial_embeddings
-        diff_mlp_score_weights = updated_mlp_score_weights - initial_mlp_score_weights
-        print(f"Difference in embeddings: {diff_embeddings}")
-        print(f"Difference in mlp_score weights: {diff_mlp_score_weights}")
+        # diff_embeddings = updated_embeddings - initial_embeddings
+        # diff_mlp_score_weights = updated_mlp_score_weights - initial_mlp_score_weights
+        #print(f"Difference in embeddings: {diff_embeddings}")
+        #print(f"Difference in mlp_score weights: {diff_mlp_score_weights}")
 
-def make_mlp(input_dim, hid_dims, output_dim, act_cls, act_kwargs=None, use_batch_norm=True):
+def make_mlp(input_dim, hid_dims, output_dim, act_cls, act_kwargs=None):
     if isinstance(act_cls, str):
         act_cls = getattr(torch.nn.modules.activation, act_cls)
 
@@ -304,9 +304,6 @@ def make_mlp(input_dim, hid_dims, output_dim, act_cls, act_kwargs=None, use_batc
         mlp.append(nn.Linear(prev_dim, dim))
         if i == len(hid_dims) - 1:
             break
-        #TODO: test Batch Normalization
-        if use_batch_norm:
-            mlp.append(nn.BatchNorm1d(dim))
         act_fn = act_cls(**act_kwargs) if act_kwargs else act_cls()
         mlp.append(act_fn)
         prev_dim = dim
