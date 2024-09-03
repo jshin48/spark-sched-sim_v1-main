@@ -123,7 +123,7 @@ class NeuralScheduler(Scheduler):
             else:
                 self.different_action_count += 1
 
-            print(f"Same actions: {self.same_action_count}, Different actions: {self.different_action_count}")
+            #print(f"Same actions: {self.same_action_count}, Different actions: {self.different_action_count}")
 
         else:
             stage_scores = self.actor.stage_policy_network(dag_batch, h_dict)
@@ -179,7 +179,7 @@ class NeuralScheduler(Scheduler):
         except ValueError:
                 print("Error: Unable to calculate action probabilities. logits:",logits)
 
-        print("action probability:", pi_percentages)
+        #print("action probability:", pi_percentages)
         idx = random.choices(np.arange(pi.size), pi)[0]
         lgprob = np.log(pi[idx])
         return idx, lgprob
@@ -293,7 +293,7 @@ class NeuralScheduler(Scheduler):
         print(f"Difference in embeddings: {diff_embeddings}")
         print(f"Difference in mlp_score weights: {diff_mlp_score_weights}")
 
-def make_mlp(input_dim, hid_dims, output_dim, act_cls, act_kwargs=None):
+def make_mlp(input_dim, hid_dims, output_dim, act_cls, act_kwargs=None, use_batch_norm=True):
     if isinstance(act_cls, str):
         act_cls = getattr(torch.nn.modules.activation, act_cls)
 
@@ -304,6 +304,9 @@ def make_mlp(input_dim, hid_dims, output_dim, act_cls, act_kwargs=None):
         mlp.append(nn.Linear(prev_dim, dim))
         if i == len(hid_dims) - 1:
             break
+        #TODO: test Batch Normalization
+        if use_batch_norm:
+            mlp.append(nn.BatchNorm1d(dim))
         act_fn = act_cls(**act_kwargs) if act_kwargs else act_cls()
         mlp.append(act_fn)
         prev_dim = dim

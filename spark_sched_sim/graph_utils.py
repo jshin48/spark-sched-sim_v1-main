@@ -61,7 +61,7 @@ def obs_to_pyg(obs: ObsType) -> Batch:
     num_active_jobs = len(num_nodes_per_dag)
 
     dag_batch = Batch(
-        x=torch.from_numpy(obs_dag_batch.nodes[:, :5]),
+        x=torch.from_numpy(obs_dag_batch.nodes),
         edge_index=torch.from_numpy(obs_dag_batch.edge_links.T),
         ptr=torch.from_numpy(ptr),
         batch=torch.from_numpy(
