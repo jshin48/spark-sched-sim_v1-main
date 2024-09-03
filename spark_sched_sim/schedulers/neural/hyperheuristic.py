@@ -168,6 +168,10 @@ class NodeEncoder(nn.Module):
             # no message passing to do
             return self._forward_no_mp(dag_batch.x)
 
+        # scale node features using normalization
+        #dag_batch.x = dag_batch.x / dag_batch.x.norm(dim=1, keepdim=True)
+
+
         # pre-process the node features into initial representations
         h_init = self.mlp_prep(dag_batch.x)
 
@@ -248,7 +252,6 @@ class ComplexHeuristicEmbeddingModel(nn.Module):
     def __init__(self, action_size, embedding_dim, hidden_dim, dropout=0.1):
         super().__init__()
         # Embedding layer
-        print("action_size, embedding_dim",action_size, embedding_dim)
         self.embedding = nn.Embedding(action_size, embedding_dim)
         nn.init.xavier_uniform_(self.embedding.weight)
 

@@ -4,7 +4,7 @@ import time
 
 if __name__ == "__main__":
     curr_time = time.time()
-    cfg = load('config/hyperheuristic_tpch.yaml')
+    cfg = load('config/decima_tpch.yaml')
     print(cfg)
     Trainer = make_trainer(cfg)
     Trainer.train()

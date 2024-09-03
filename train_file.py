@@ -10,6 +10,7 @@ from trainers import make_trainer
 
 #usage : python3 train_file.py config/hyperheuristic_alibaba.yaml results/0822/train_list_feature.csv
 #usage : python3 train_file.py config/hyperheuristic_tpch.yaml results/0822/train_list_feature.csv
+#usage : python3 train_file.py config/decima_tpch.yaml results/0822/train_decima_tpch.csv
 
 def load_csv(csv_path):
     with open(csv_path) as f:
@@ -40,10 +41,9 @@ def train_model(cfg, lines, df):
 
 
 def main():
-    # I want to either set up argument parser by receiving values or use the following hard-coded values
     parser = argparse.ArgumentParser(description='Process some file paths.')
-    parser.add_argument('config_path', type=str, default='config/hyperheuristic_alibaba.yaml')
-    parser.add_argument('csv_path', type=str, default='results/0822/train_list_feature.csv')
+    parser.add_argument('--config_path', type=str, default='config/decima_tpch.yaml')
+    parser.add_argument('--csv_path', type=str, default='results/0822/train_decima_tpch.csv')
 
     # Parse arguments
     args = parser.parse_args()

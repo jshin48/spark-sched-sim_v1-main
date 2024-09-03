@@ -27,7 +27,7 @@ class NeuralObsWrapper(ObservationWrapper):
     for neural schedulers.
     """
 
-    def __init__(self, env, num_tasks_scale=200, work_scale=1e5):
+    def __init__(self, env, num_tasks_scale=1, work_scale=1): #num_tasks_scale=200, work_scale=1e5):
         super().__init__(env)
 
         self.num_tasks_scale = num_tasks_scale
