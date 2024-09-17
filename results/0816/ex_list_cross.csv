@@ -1,5 +1,0 @@
-id,scheduler_name,input_feature,train_data,job_arrival_cap,job_arrival_rate,num_heuristics,resource_allocation,model_num_train,model_name,num_executors,num_experiments,test_data
-2,HyperHeuristicScheduler,"[""num_queue"",""glob"",""cpt_mean"",""cpt_var""]",AlibabaDataSampler,100,0.000125,2,DRA,200,2_DRA_cap100_int8_feature4,20,50,AlibabaDataSampler
-3,HyperHeuristicScheduler,"[""num_queue"",""glob"",""cpt_mean"",""cpt_var"",""children_mean"",""children_var""]",AlibabaDataSampler,100,0.000125,2,DRA,200,2_DRA_cap100_int8_feature6,20,50,AlibabaDataSampler
-4,HyperHeuristicScheduler,"[""num_queue"",""glob""]",AlibabaDataSampler,100,0.000125,5,DRA,200,5_DRA_cap100_int8_feature2,20,50,AlibabaDataSampler
-5,HyperHeuristicScheduler,"[""num_queue"",""glob"",""cpt_mean"",""cpt_var""]",AlibabaDataSampler,100,0.000125,5,DRA,200,5_DRA_cap100_int8_feature4,20,50,AlibabaDataSampler

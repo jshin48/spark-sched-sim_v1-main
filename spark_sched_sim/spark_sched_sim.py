@@ -86,7 +86,8 @@ class SparkSchedSimEnv(Env):
 
         #JS Added
         self.agent_cls = agent_cfg["agent_cls"]
-        if self.agent_cls == 'HyperHeuristicScheduler' or self.agent_cls == 'HybridHeuristicScheduler':
+        if (self.agent_cls == 'HyperHeuristicScheduler' or self.agent_cls == 'HybridHeuristicScheduler'
+                or self.agent_cls == 'RandomHeuristic'):
             self.num_heuristics = agent_cfg["num_heuristics"]
             self.list_heuristics = agent_cfg["list_heuristics"]
             self.num_resource_heuristics = agent_cfg["num_resource_heuristics"]

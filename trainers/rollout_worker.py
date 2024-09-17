@@ -9,7 +9,7 @@ import torch
 
 from spark_sched_sim.wrappers import NeuralActWrapper, StochasticTimeLimit
 from spark_sched_sim.schedulers import make_scheduler
-from .utils import Profiler  , HiddenPrints
+from .utils import Profiler, HiddenPrints
 from spark_sched_sim.metrics import avg_num_jobs
 
 
@@ -133,6 +133,10 @@ class RolloutWorkerSync(RolloutWorker):
         rollout_buffer = RolloutBuffer()
 
         obs, _ = self.env.reset(seed=self.seed)
+        self.env.cpt_scale = self.env.unwrapped.data_sampler.max_cpt
+        self.env.children_scale = self.env.unwrapped.data_sampler.max_children
+        print("cpt_scale:",self.env.cpt_scale, "/children_scale:",self.env.children_scale)
+
         self.reset_count += 1
 
         wall_time = 0

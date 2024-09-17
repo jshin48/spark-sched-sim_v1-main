@@ -13,14 +13,15 @@ from spark_sched_sim.schedulers import (
     NeuralScheduler,
     make_scheduler,
     HybridHeuristicScheduler,
+    RandomHeuristic,
 )
 from spark_sched_sim.wrappers import NeuralActWrapper
 from spark_sched_sim import metrics
 from param import *
 
-args.input_file = './results/0822/ex_tpch.csv'
+args.input_file = './results/0822/ex_scale.csv'
 args.result_folder = './results/0822/'
-args.output_file = 'result_tpch_hyper1000_decima300.csv'
+args.output_file = 'result_scale200.csv'
 CFG = load(filename=os.path.join("config", "hyperheuristic_tpch.yaml"))
 
 def main():
@@ -33,27 +34,14 @@ def main():
     f = open(args.result_folder + args.output_file, 'w', encoding='UTF8', newline='')
     writer = csv.writer(f)
     writer.writerow(list(df)+["avg_job_duration"])
-
-    # for ex_id, par_value in enumerate(parameters_set):
-    #     result_set = []
-    #     param_upate(par_name,par_value)
-    #     pprint(vars(args))
-    #     print("parameter:",par_value)
-    #     for ex_num in range(args.num_experiments):
-    #         result = example(ex_id,ex_num)
-    #         result_set.append(result)
-    #
-    #     writer.writerow(par_value+result_set)
-
-    #df.drop(["id"], axis=1, inplace=True)
-    #df=df.astype({'splitting_rule': 'object'})
+    df['num_executors'] = df['num_executors'].astype(int)
     print(df.dtypes)
 
     for i in range(len(df)):
         result_set = []
         param_upate(list(df),list(df.iloc[i]))
         pprint(vars(args))
-        for ex_num in range(args.num_experiments):
+        for ex_num in range(int(args.num_experiments)):
             result = example(i,ex_num)
             result_set.append(result)
         writer.writerow(list(df.iloc[i])+[result_set])
@@ -78,6 +66,8 @@ def example(ex_id,ex_num):
     #pprint(env_cfg)
     if agent_cfg["agent_cls"] == "HybridHeuristicScheduler":
         scheduler = HybridHeuristicScheduler(env_cfg["num_executors"],agent_cfg["resource_allocation"],rule_switch_threshold=4)
+    elif agent_cfg["agent_cls"] == "RandomHeuristic":
+        scheduler = RandomHeuristic(env_cfg["num_executors"],agent_cfg["resource_allocation"], agent_cfg["num_heuristics"])
     else:
         scheduler = make_scheduler(agent_cfg)
     avg_job_duration = run_episode(env_cfg, agent_cfg, scheduler, seed = 42+ ex_num)
@@ -89,7 +79,8 @@ def run_episode(env_cfg,  agent_cfg, scheduler, seed=1234):
     env_cfg["data_sampler_cls"]= env_cfg["test_data"]
     env = gym.make("spark_sched_sim:SparkSchedSimEnv-v0", env_cfg=env_cfg,  agent_cfg= agent_cfg)
 
-    if isinstance(scheduler, NeuralScheduler) or isinstance(scheduler, HybridHeuristicScheduler):
+    if isinstance(scheduler, NeuralScheduler) or isinstance(scheduler, HybridHeuristicScheduler)\
+            or isinstance(scheduler, RandomHeuristic):
         env = NeuralActWrapper(env)
         env = scheduler.obs_wrapper_cls(env)
 

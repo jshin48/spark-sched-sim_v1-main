@@ -23,6 +23,7 @@ from .neural.dagnn import DAGNNScheduler
 
 from .heuristic.heuristic import HeuristicScheduler
 from .heuristic.random_scheduler import RandomScheduler
+from .heuristic.random_heuristic import RandomHeuristic
 from .heuristic.hybridheuristic import HybridHeuristicScheduler
 
 

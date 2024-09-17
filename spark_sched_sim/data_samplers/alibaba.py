@@ -44,6 +44,8 @@ class AlibabaDataSampler(BaseDataSampler):
         self.warmup_delay = warmup_delay
         self.splitting_rule = splitting_rule
         self.np_random = None
+        self.max_cpt = 1
+        self.max_children = 1
 
         if not osp.isdir("data/alibaba"):
             print("Alibaba data is unavailable")
@@ -137,7 +139,6 @@ class AlibabaDataSampler(BaseDataSampler):
             stage = Stage(stage_id, job_id, num_tasks, task_duration,cpt[stage_id], num_children[stage_id])
             stages += [stage]
 
-
         # generate DAG
         dag = nx.from_numpy_array(adj_mat, create_using=nx.DiGraph)
         for _, _, d in dag.edges(data=True):
@@ -164,6 +165,8 @@ class AlibabaDataSampler(BaseDataSampler):
         for stage_id in range(num_node):
             children_idx[stage_id] = adj_mat[stage_id].nonzero()[0]
             num_children[stage_id] =  children_idx[stage_id].size
+            if num_children[stage_id] > self.max_children:
+                self.max_children = num_children[stage_id]
 
         # Find cpt of each stage
         each_task_duration = [max(task_duration_list[stage_id], 1) for stage_id in range(num_node)]
@@ -174,6 +177,8 @@ class AlibabaDataSampler(BaseDataSampler):
             if children_idx[stage_id].size == 0:
                 cpt[stage_id] = each_task_duration[stage_id]
                 cpt_updated_count[stage_id] = 1
+                if cpt[stage_id] > self.max_cpt:
+                    self.max_cpt = cpt[stage_id]
 
         while sum(cpt_updated_count) < num_node:
             for stage_id in range(num_node):

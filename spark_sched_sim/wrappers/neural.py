@@ -27,11 +27,13 @@ class NeuralObsWrapper(ObservationWrapper):
     for neural schedulers.
     """
 
-    def __init__(self, env, num_tasks_scale=1, work_scale=1): #num_tasks_scale=200, work_scale=1e5):
+    def __init__(self, env, num_tasks_scale=200, work_scale=1e5):
         super().__init__(env)
 
         self.num_tasks_scale = num_tasks_scale
         self.work_scale = work_scale
+        self.cpt_scale = env.unwrapped.data_sampler.max_cpt
+        self.children_scale = env.unwrapped.data_sampler.max_children
         self.num_executors = env.unwrapped.num_executors
         self.NUM_NODE_FEATURES= env.unwrapped.NUM_NODE_FEATURES
 
@@ -125,9 +127,9 @@ class NeuralObsWrapper(ObservationWrapper):
         nodes[:, 4] = num_remaining_tasks * most_recent_duration / self.work_scale
         if self.NUM_NODE_FEATURES == 7:
             # nodes cpt
-            nodes[:, 5] = dag_batch.nodes[:, 3]
+            nodes[:, 5] = dag_batch.nodes[:, 3] / self.cpt_scale
             # number of children for each node
-            nodes[:, 6] = dag_batch.nodes[:, 4]
+            nodes[:, 6] = dag_batch.nodes[:, 4] / self.children_scale
 
         return nodes
 

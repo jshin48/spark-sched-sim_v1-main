@@ -8,7 +8,7 @@ from copy import deepcopy
 import json
 import pathlib
 import time
-
+#import resource
 import matplotlib
 #matplotlib.use('TkAgg')
 
@@ -117,6 +117,10 @@ class Trainer(ABC):
         ax.set_title('Training Reward Over Time')
 
         for i in range(self.num_iterations):
+            # Increase the file descriptor limit
+            # soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
+            # resource.setrlimit(resource.RLIMIT_NOFILE, (min(soft * 2, hard), hard))
+
             actor_sd = deepcopy(self.agent.actor.state_dict())
             # # move params to GPU for learning
             self.agent.actor.to(self.device, non_blocking=True)

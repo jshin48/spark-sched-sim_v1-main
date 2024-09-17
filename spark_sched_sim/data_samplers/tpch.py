@@ -44,6 +44,9 @@ class TPCHDataSampler(BaseDataSampler):
         self.warmup_delay = warmup_delay
         self.splitting_rule = splitting_rule
         self.np_random = None
+        self.max_cpt = 1
+        self.max_children = 1
+
         self._init_executor_intervals(num_executors)
 
         if not osp.isdir("data/tpch"):
@@ -224,6 +227,8 @@ class TPCHDataSampler(BaseDataSampler):
         for stage_id in range(num_node):
             children_idx[stage_id] = adj_mat[stage_id].nonzero()[0]
             num_children[stage_id] =  children_idx[stage_id].size
+            if num_children[stage_id] > self.max_children:
+                self.max_children = num_children[stage_id]
 
         # Find cpt of each stage
         each_task_duration = [self._rough_task_duration(task_duration_data[id]) for id in range(num_node)]
@@ -234,6 +239,8 @@ class TPCHDataSampler(BaseDataSampler):
             if children_idx[stage_id].size == 0:
                 cpt[stage_id] = each_task_duration[stage_id]
                 cpt_updated_count[stage_id] = 1
+                if cpt[stage_id] > self.max_cpt:
+                    self.max_cpt = cpt[stage_id]
 
         while sum(cpt_updated_count) < num_node:
             for stage_id in range(num_node):

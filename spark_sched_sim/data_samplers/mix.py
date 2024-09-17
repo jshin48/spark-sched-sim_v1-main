@@ -17,6 +17,8 @@ class MixDataSampler(BaseDataSampler):
         self.job_arrival_cap = job_arrival_cap
         self.mean_interarrival_time = 1 / job_arrival_rate
         self.np_random = None
+        self.max_cpt = 1
+        self.max_children = 1
 
         self.tpch_sampler = tpch.TPCHDataSampler(job_arrival_rate,job_arrival_cap,num_executors,warmup_delay,splitting_rule)
         self.alibaba_sampler = alibaba.AlibabaDataSampler(job_arrival_rate,job_arrival_cap,num_executors,warmup_delay,splitting_rule)
@@ -53,6 +55,8 @@ class MixDataSampler(BaseDataSampler):
             job_idx += 1
 
         self.alibaba_ratio += 0.02
+        self.max_cpt = max(self.tpch_sampler.max_cpt, self.alibaba_sampler.max_cpt)
+        self.max_children = max(self.tpch_sampler.max_children, self.alibaba_sampler.max_children)
 
         return job_sequence
 
