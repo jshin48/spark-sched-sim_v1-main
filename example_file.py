@@ -19,9 +19,9 @@ from spark_sched_sim.wrappers import NeuralActWrapper
 from spark_sched_sim import metrics
 from param import *
 
-args.input_file = './results/0822/ex_scale.csv'
-args.result_folder = './results/0822/'
-args.output_file = 'result_scale200.csv'
+args.input_file = './results/0909/ex_tpch.csv'
+args.result_folder = './results/0909/'
+args.output_file = 'result_tpch200.csv'
 CFG = load(filename=os.path.join("config", "hyperheuristic_tpch.yaml"))
 
 def main():
@@ -95,7 +95,7 @@ def run_episode(env_cfg,  agent_cfg, scheduler, seed=1234):
         obs, _, terminated, truncated, _ = env.step(action)
 
     avg_job_duration = metrics.avg_job_duration(env) * 1e-3
-    #metrics.print_task_job_time(env)
+    metrics.print_task_job_time(env)
     # cleanup rendering
     env.close()
 
