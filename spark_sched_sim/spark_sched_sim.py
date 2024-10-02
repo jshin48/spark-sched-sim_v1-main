@@ -234,10 +234,8 @@ class SparkSchedSimEnv(Env):
         terminated = self.all_jobs_complete
 
         if not terminated:
-            assert (
-                self.exec_tracker.num_committable_execs() > 0
-                and len(self.schedulable_stages) > 0
-            )
+            assert (self.exec_tracker.num_committable_execs() > 0)
+            assert (len(self.schedulable_stages) > 0)
 
         if self.render_mode == "human":
             self._render_frame()

@@ -17,10 +17,10 @@ from spark_sched_sim.wrappers import NeuralActWrapper
 from spark_sched_sim import metrics
 from param import *
 
-args.input_file = './results/0806/ex_list_cross.csv'
-args.result_folder = './results/0806/'
-args.output_file = 'result_ex_list_cross.csv'
-CFG = load(filename=os.path.join("config", "hyperheuristic_tpch.yaml"))
+args.input_file = './results/0929/ex_list_from_0802_with_new_models.csv'
+args.result_folder = './results/0929/'
+args.output_file = 'result_list_from_0802_with_new_models.csv'
+CFG = load(filename=os.path.join("config", "decima_tpch.yaml"))
 
 def main():
     with open(args.input_file) as f:
@@ -72,7 +72,7 @@ def example(ex_id,ex_num):
         scheduler = HybridHeuristicScheduler(env_cfg["num_executors"],agent_cfg["resource_allocation"],rule_switch_threshold=4)
     else:
         scheduler = make_scheduler(agent_cfg)
-    avg_job_duration = run_episode(env_cfg, scheduler, seed = 42+ ex_num)
+    avg_job_duration = run_episode(env_cfg, scheduler, seed = 42 + ex_num)
 
     print(f"Done! Average job duration: {avg_job_duration:.1f}s", flush=True)
     return avg_job_duration
@@ -96,7 +96,7 @@ def run_episode(env_cfg, scheduler, seed=1234):
         obs, _, terminated, truncated, _ = env.step(action)
 
     avg_job_duration = metrics.avg_job_duration(env) * 1e-3
-    #metrics.print_task_job_time(env)
+    metrics.print_task_job_time(env)
     # cleanup rendering
     env.close()
 

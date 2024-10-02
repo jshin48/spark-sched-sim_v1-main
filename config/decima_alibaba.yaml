@@ -79,8 +79,8 @@ agent:
 
 env:
   num_executors: 20
-  job_arrival_cap: 200
-  job_arrival_rate: 8.e-6  #A smaller rate makes more arrivals in the unit time.
+  job_arrival_cap: 100
+  job_arrival_rate: 0.000125 #8.e-6  #A smaller rate makes more arrivals in the unit time.
   moving_delay: 2000.
   warmup_delay: 1000.
   pod_creation_time: 100.

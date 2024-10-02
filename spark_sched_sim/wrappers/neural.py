@@ -39,6 +39,9 @@ class NeuralObsWrapper(ObservationWrapper):
         self.num_executors = env.unwrapped.num_executors
         self.NUM_NODE_FEATURES= env.unwrapped.NUM_NODE_FEATURES
 
+        self.cpt_scale = 1e5
+        self.num_node_scale = 10
+
         self.observation_space = sp.Dict(
             {
                 "dag_batch": sp.Graph(
@@ -129,9 +132,9 @@ class NeuralObsWrapper(ObservationWrapper):
         nodes[:, 4] = num_remaining_tasks * most_recent_duration / self.work_scale
         if self.NUM_NODE_FEATURES == 7:
             # nodes cpt
-            nodes[:, 5] = dag_batch.nodes[:, 3]
+            nodes[:, 5] = dag_batch.nodes[:, 3] / self.cpt_scale
             # number of children for each node
-            nodes[:, 6] = dag_batch.nodes[:, 4]
+            nodes[:, 6] = dag_batch.nodes[:, 4] / self.num_node_scale
 
         return nodes
 

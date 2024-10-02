@@ -5,7 +5,7 @@ import time,csv
 if __name__ == "__main__":
     cfg = load('config/hyperheuristic_tpch.yaml')
 
-    with open("results/0806/train_list.csv") as f:
+    with open("results/0929/train_list_hyper.csv") as f:
         reader = csv.reader(f)
         lines = list(reader)
 
