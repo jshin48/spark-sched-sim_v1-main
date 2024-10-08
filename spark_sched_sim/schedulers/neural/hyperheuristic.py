@@ -58,11 +58,11 @@ class HyperHeuristicScheduler(NeuralScheduler):
             opt_cls,
             opt_kwargs,
             max_grad_norm,
-            resource_allocation,
-            num_resource_heuristics,
-            list_resource_heuristics,
             num_heuristics,
             list_heuristics,
+            num_resource_heuristics,
+            list_resource_heuristics,
+            resource_allocation,
         )
 
 
@@ -78,7 +78,7 @@ class ActorNetwork(nn.Module):
         num_heuristics,
         list_heuristics,
         num_resource_heuristics,
-        list_resource_heuristics
+        list_resource_heuristics,
     ):
         super().__init__()
         self.encoder = EncoderNetwork(num_node_features, embed_dim, gnn_mlp_kwargs)
@@ -86,28 +86,22 @@ class ActorNetwork(nn.Module):
             action_size=num_heuristics,
             embedding_dim=embed_dim,
             hidden_dim=64,  # Example hidden dimension size
-            dropout=0.1
+            dropout=0.1,
+
         )
 
         emb_dims = {"resource_heuristic":embed_dim, "heuristic":embed_dim,"node": embed_dim, "dag": embed_dim, "glob": embed_dim}
-        #
-        # self.stage_policy_network = StagePolicyNetwork(
-        #     num_node_features, emb_dims, policy_mlp_kwargs
-        # )
-
-        self.exec_policy_network = ExecPolicyNetwork(
-            num_executors, num_dag_features, emb_dims, policy_mlp_kwargs
-        )
 
         self.heuristic_policy_network = HeuristicPolicyNetwork(
             self.embedding_model, num_heuristics, list_heuristics, emb_dims, policy_mlp_kwargs
         )
 
-        self.heuristic_policy_network2 = HeuristicPolicyNetwork2(
-            self.embedding_model, num_heuristics, list_heuristics, emb_dims, policy_mlp_kwargs)
+        self.exec_policy_network = ExecPolicyNetwork(
+            num_executors, num_dag_features, emb_dims, policy_mlp_kwargs
+        )
 
         self.resource_heuristic_policy_network = ResourcePolicyNetwork(
-            num_resource_heuristics, list_resource_heuristics,
+            self.embedding_model,num_resource_heuristics, list_resource_heuristics,
             num_executors, num_dag_features, emb_dims, policy_mlp_kwargs)
 
         self._reset_biases()

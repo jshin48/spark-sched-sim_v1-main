@@ -19,8 +19,8 @@ from param import *
 
 args.input_file = './results/0929/ex_list_from_0802_with_new_models.csv'
 args.result_folder = './results/0929/'
-args.output_file = 'result_list_from_0802_with_new_models.csv'
-CFG = load(filename=os.path.join("config", "decima_tpch.yaml"))
+args.output_file = 'result_list_from_0802_with_new_models_50.csv'
+CFG = load(filename=os.path.join("config","hyperheuristic_tpch.yaml"))
 
 def main():
     with open(args.input_file) as f:
