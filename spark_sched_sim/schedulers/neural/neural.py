@@ -167,7 +167,8 @@ class NeuralScheduler(Scheduler):
     def _sample(self,logits):
         pi = self.softmax_with_temperature(logits,temperature=0.1).detach().numpy()
         #print("action probability:", [round(pi[0], 2), round(pi[1], 2)])
-        idx = random.choices(np.arange(pi.size), pi)[0]
+        idx = self.np_random.choice(np.arange(pi.size), p=pi)
+        #idx = random.choices(np.arange(pi.size), pi)[0]
         lgprob = np.log(pi[idx])
         return idx, lgprob
 
