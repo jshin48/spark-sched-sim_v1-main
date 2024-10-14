@@ -47,7 +47,7 @@ class RolloutWorker(ABC):
         conn,
         agent_cls,
         env_cfg,
-        agent_kwargs,
+        agent_cfg,
         stdout_dir,
         base_seed,
         seed_step,
@@ -62,7 +62,7 @@ class RolloutWorker(ABC):
         # log each of the processes to separate files
         #sys.stdout = open(osp.join(stdout_dir, f"{rank}.out"), "a")
 
-        self.agent = make_scheduler(agent_kwargs)
+        self.agent = make_scheduler(agent_cfg)
         self.agent.actor.eval()
 
         # might need to download dataset, and only one process should do this.
@@ -70,7 +70,7 @@ class RolloutWorker(ABC):
         # acquire it downloads the dataset, and any subsequent processes notices
         # that the dataset is already present once it acquires the lock.
         with lock:
-            env = gym.make("spark_sched_sim:SparkSchedSimEnv-v0", env_cfg=env_cfg|{"agent_cls":agent_cls})
+            env = gym.make("spark_sched_sim:SparkSchedSimEnv-v0", env_cfg=env_cfg, agent_cfg = agent_cfg)
 
         env = StochasticTimeLimit(env, env_cfg["mean_time_limit"])
         env = NeuralActWrapper(env)

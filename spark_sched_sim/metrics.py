@@ -1,6 +1,6 @@
 import numpy as np
 import csv
-import time
+from datetime import datetime
 
 def job_durations(env):
     durations = []
@@ -15,7 +15,9 @@ def avg_job_duration(env):
     return np.mean(job_durations(env))
 
 def print_task_job_time(env):
-    f = open('./results/detail/'+str(env.agent_cls)+str(time.time())+'.csv', 'w', encoding='UTF8', newline='')
+    current_time = datetime.now().strftime("%m%d_%H%M%S")
+
+    f = open('./results/detail/'+str(env.agent_cls)+str(current_time)+'.csv', 'w', encoding='UTF8', newline='')
     writer = csv.writer(f)
     header = ['job_id','stage_id','task_id','job_arrival_t','task_start_t','task_end_t','task_dur','job_end_t','job_dur']
     writer.writerow(header)
