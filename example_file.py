@@ -17,9 +17,9 @@ from spark_sched_sim.wrappers import NeuralActWrapper
 from spark_sched_sim import metrics
 from param import *
 
-args.input_file = './results/0806/ex_list_cross.csv'
-args.result_folder = './results/0806/'
-args.output_file = 'result_ex_list_cross.csv'
+args.input_file = './results/1008/ex_list_v0816.csv'
+args.result_folder = './results/1008/'
+args.output_file = 'result_v0816_2.csv'
 CFG = load(filename=os.path.join("config", "hyperheuristic_tpch.yaml"))
 
 def main():
@@ -84,6 +84,7 @@ def run_episode(env_cfg, scheduler, seed=1234):
     if isinstance(scheduler, NeuralScheduler) or isinstance(scheduler, HybridHeuristicScheduler):
         env = NeuralActWrapper(env)
         env = scheduler.obs_wrapper_cls(env)
+        scheduler.actor.eval()  # set to evaluation mode
 
     obs, _ = env.reset(seed=seed, options=None)
     terminated = truncated = False
