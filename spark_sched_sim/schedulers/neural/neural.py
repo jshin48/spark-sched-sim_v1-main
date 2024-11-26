@@ -416,6 +416,33 @@ class HeuristicPolicyNetwork(nn.Module):
         if "glob" in self.input_feature:
             input_matrix.append(h_glob_rpt)
 
+        if "cpt_mean" in self.input_feature or "cpt_var" in self.input_feature:
+            stage_mask = dag_batch["stage_mask"].bool()
+            stage_cpt = dag_batch.x[:,5]
+
+            masked_stages_cpt = stage_cpt[stage_mask]
+
+            if "cpt_mean" in self.input_feature:
+                mean_cpt = torch.mean(masked_stages_cpt).repeat(h_glob_rpt.shape[0],1)
+                input_matrix.append(mean_cpt)
+            if "cpt_var" in self.input_feature:
+                var_cpt = torch.std(masked_stages_cpt).repeat(h_glob_rpt.shape[0],1)
+                input_matrix.append(var_cpt)
+
+        if "children_mean" in self.input_feature or "children_var" in self.input_feature:
+            stage_mask = dag_batch["stage_mask"].bool()
+            stage_children = dag_batch.x[:,6]
+
+            masked_stages_children = stage_children[stage_mask ]
+
+            if "children_mean" in self.input_feature:
+                mean_children = torch.mean(masked_stages_children).repeat(h_glob_rpt.shape[0],1)
+                input_matrix.append(mean_children)
+            if "children_var" in self.input_feature:
+                var_children = torch.std(masked_stages_children).repeat(h_glob_rpt.shape[0],1)
+                input_matrix.append(var_children)
+
+        #print("input_matrix:",torch.cat(input_matrix, dim=1))
         action_indices = torch.LongTensor(range(self.num_heuristics))
         heuristic_actions = self.embedding_model(action_indices)
         heuristic_actions = heuristic_actions.repeat_interleave(h_dict['glob'].shape[0], output_size=h_glob_rpt.shape[0], dim=0)
@@ -426,7 +453,6 @@ class HeuristicPolicyNetwork(nn.Module):
 
         heuristic_scores = self.mlp_score(status_inputs).squeeze(-1)
         #print("heuristic_actions",heuristic_actions)
-        #print("heuristic_scores",heuristic_scores)
         return heuristic_scores
 
 class HeuristicPolicyNetwork_old(nn.Module):

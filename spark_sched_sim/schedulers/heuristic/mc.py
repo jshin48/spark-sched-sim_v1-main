@@ -3,26 +3,20 @@ import numpy as np
 from .heuristic import HeuristicScheduler
 
 class McScheduler(HeuristicScheduler):
-    def __init__(self, num_executors, resource_allocation, seed=42):
+    def __init__(self, num_executors, resource_allocation):
         name = "MC"
         super().__init__(name)
         self.num_executors = num_executors
-        self.set_seed(seed)
         self.resource_allocation = resource_allocation
 
-    def set_seed(self, seed):
-        self.np_random = np.random.RandomState(seed)
-
     def schedule(self, obs):
+        #print("In MC")
         job_ptr = np.array(obs["dag_ptr"])
         stage_mask = obs["stage_mask"]  # List of True or False if a corresponding node is schedulable. see "spark_sched_sim.py 439"
         stage_num_children = obs["dag_batch"].nodes[:, 6]
         stage_indices = stage_mask.nonzero()[0]
         schedulable_stages = {stage_idx: idx for idx, stage_idx in enumerate(stage_indices)}
         schedulable_stages_children = {stage_idx: stage_num_children[stage_idx] for stage_idx in stage_indices}
-
-        # schedulable_stages = dict(zip(stage_mask.nonzero()[0], np.arange(stage_mask.sum())))
-        # schedulable_stages_children = dict(zip(stage_mask.nonzero()[0], stage_num_children[stage_mask.nonzero()[0]]))
 
         exec_supplies = obs["exec_supplies"]
         num_committable_execs = obs["num_committable_execs"]
@@ -48,8 +42,16 @@ class McScheduler(HeuristicScheduler):
                             node_selected = key
 
                     selected_stage_idx = schedulable_stages[int(node_selected)]
+                    selected_job_idx = source_job_idx
+                    # print("DRA exec cap: ", exec_cap[selected_job_idx], "exec supplies: ",
+                    #       obs["exec_supplies"][selected_job_idx], "num committable execs: ",
+                    #       obs["num_committable_execs"])
+                    if self.resource_allocation == 'DRA':
+                        num_exec = min(exec_cap[selected_job_idx],num_committable_execs)-1
+                    else:
+                        num_exec = num_committable_execs-1
 
-                    return {"stage_idx": selected_stage_idx, "num_exec": num_committable_execs-1}
+                    return {"stage_idx": selected_stage_idx, "num_exec": num_exec}
 
                 # searches for a schedulable stage with the maximum children
             for _ in range(len(schedulable_stages)):

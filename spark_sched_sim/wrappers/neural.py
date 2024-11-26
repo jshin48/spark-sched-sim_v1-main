@@ -39,8 +39,8 @@ class NeuralObsWrapper(ObservationWrapper):
         self.num_executors = env.unwrapped.num_executors
         self.NUM_NODE_FEATURES= env.unwrapped.NUM_NODE_FEATURES
 
-        self.cpt_scale = 1e5
-        self.num_node_scale = 10
+        self.cpt_scale = env.unwrapped.cpt_scale
+        self.num_node_scale = env.unwrapped.num_node_scale
 
         self.observation_space = sp.Dict(
             {

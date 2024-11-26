@@ -1,25 +1,20 @@
 import numpy as np
-
 from .heuristic import HeuristicScheduler
 
 class WscptScheduler(HeuristicScheduler):
-    def __init__(self, num_executors, resource_allocation, seed=42):
+    def __init__(self, num_executors, resource_allocation):
         name = "WSCPT"
         super().__init__(name)
         self.num_executors = num_executors
-        self.set_seed(seed)
         self.resource_allocation = resource_allocation
 
-    def set_seed(self, seed):
-        self.np_random = np.random.RandomState(seed)
-
     def schedule(self, obs):
+        #print("In WSCPT")
         job_ptr = np.array(obs["dag_ptr"])
         stage_mask = obs["stage_mask"]
         stage_cpt = obs["dag_batch"].nodes[:,5]
-        schedulable_stages = dict(zip(stage_mask.nonzero()[0], np.arange(stage_mask.sum())))
         masked_stages_cpt = np.multiply(stage_cpt,stage_mask)
-
+        schedulable_stages = dict(zip(stage_mask.nonzero()[0], np.arange(stage_mask.sum())))
         exec_supplies = np.array(obs["exec_supplies"])
         num_committable_execs = obs["num_committable_execs"]
         source_job_idx = obs["source_job_idx"]
@@ -34,7 +29,13 @@ class WscptScheduler(HeuristicScheduler):
                 stage_idx_end = job_ptr[source_job_idx + 1]
                 if stage_mask[stage_idx_start:stage_idx_end].sum() > 0:
                     selected_job_idx = source_job_idx
-                    num_exec = num_committable_execs-1
+                    # print("DRA exec cap: ", obs["DRA_exec_cap"][selected_job_idx], "exec supplies: ",
+                    #       obs["exec_supplies"][selected_job_idx], "num committable execs: ",
+                    #       obs["num_committable_execs"])
+                    if self.resource_allocation == 'DRA':
+                        num_exec = min(obs["DRA_exec_cap"][selected_job_idx],num_committable_execs)-1
+                    else:
+                        num_exec = num_committable_execs-1
 
             if selected_job_idx == -1:
                 # find job cpt
@@ -65,27 +66,6 @@ class WscptScheduler(HeuristicScheduler):
                                    obs["num_committable_execs"]) - 1
                 else:
                     selected_job_idx = min(job_cpt, key=job_cpt.get)
-
-                # for job in range(num_active_jobs):
-                #     selected_job_idx = min(job_cpt,key = job_cpt.get)
-                #     if self.resource_allocation == 'DRA':
-                #         if obs["DRA_exec_cap"][selected_job_idx] < self.num_executors:
-                #             # increase DRA exec_cap manually for the next job if the job that is releasing executors have the last stage to be processed.
-                #             if job_ptr[1] == 1 and stage_mask[0] == False:
-                #                 obs["DRA_exec_cap"][selected_job_idx] = self.num_executors
-                #         if obs["exec_supplies"][selected_job_idx] >= obs["DRA_exec_cap"][selected_job_idx]:
-                #             job_cpt[selected_job_idx] = np.inf
-                #             continue
-                #     else:
-                #         break
-                # if job_cpt[min(job_cpt)] == np.inf:
-                #     #print("IN WSCPT: All job exec_cap are reached")
-                #     selected_job_idx = min(job_cpt,key = job_cpt.get)
-                #     obs["DRA_exec_cap"][selected_job_idx] = self.num_executors
-                #
-                # if self.resource_allocation == 'DRA':
-                #     num_exec = min(obs["DRA_exec_cap"][selected_job_idx] - obs["exec_supplies"][selected_job_idx],
-                #                    obs["num_committable_execs"]) - 1
 
             """searches for a schedulable stage in a given job, prioritizing a node with the longest cpt"""
             stage_idx_start = job_ptr[selected_job_idx]

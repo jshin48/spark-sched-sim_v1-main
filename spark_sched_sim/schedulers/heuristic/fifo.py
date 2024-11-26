@@ -1,7 +1,5 @@
 import numpy as np
-
 from .heuristic import HeuristicScheduler
-
 
 class FifoScheduler(HeuristicScheduler):
     def __init__(self, num_executors, resource_allocation):
@@ -18,11 +16,14 @@ class FifoScheduler(HeuristicScheduler):
             # first, try to find a stage in the same job that is releasing executers
             if obs.source_job_idx < num_active_jobs:
                 selected_stage_idx = self.find_stage(obs, obs.source_job_idx)
-
                 if selected_stage_idx != -1:
+                    if self.resource_allocation == 'DRA':
+                        num_exec = min(obs.DRA_exec_cap[obs.source_job_idx],obs.num_committable_execs)-1
+                    else:
+                        num_exec = obs.num_committable_execs-1
                     return {
                         "stage_idx": selected_stage_idx,
-                        "num_exec": obs.num_committable_execs-1,
+                        "num_exec": num_exec,
                     }
 
             # search through jobs by order of arrival.

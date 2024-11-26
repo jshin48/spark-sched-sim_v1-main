@@ -18,10 +18,10 @@ from spark_sched_sim.wrappers import NeuralActWrapper
 from spark_sched_sim import metrics
 from param import *
 
-args.input_file = './results/1008/ex_list_1000.csv'
-args.result_folder = './results/1008/'
-args.output_file = 'result_list_1000.csv'
-CFG = load(filename=os.path.join("config","hyperheuristic_tpch.yaml"))
+args.input_file = './results/1111/DRAfix_ex_list.csv'
+args.result_folder = './results/1111/'
+args.output_file = 'DRAfix_result.csv'
+
 
 def main():
     with open(args.input_file) as f:
@@ -41,12 +41,16 @@ def main():
         param_update(list(df),list(df.iloc[i]))
         pprint(vars(args))
         for ex_num in range(int(args.num_experiments)):
-            result = example(i,ex_num)
+            if df["scheduler_name"].iloc[i] == "DecimaScheduler":
+                cfg_file = "decima_tpch.yaml"
+            else:
+                cfg_file = "hyperheuristic_tpch.yaml"
+            result = example(i,ex_num,cfg_file)
             result_set.append(result)
         writer.writerow(list(df.iloc[i])+[result_set])
 
-
-def example(ex_id,ex_num):
+def example(ex_id,ex_num,cfg_file):
+    CFG = load(filename=os.path.join("config", cfg_file))
     agent_cfg = CFG["agent"] | {"num_executors": args.num_executors,
         "state_dict_path": Path("models/"+args.scheduler_name+"/" +args.train_data+
                                 "/"+ args.model_name +"/checkpoints/"+ str(args.model_num_train)+"/model.pt")}
@@ -67,7 +71,7 @@ def example(ex_id,ex_num):
         scheduler = HybridHeuristicScheduler(env_cfg["num_executors"],agent_cfg["resource_allocation"],rule_switch_threshold=4)
     else:
         scheduler = make_scheduler(agent_cfg)
-    avg_job_duration = run_episode(env_cfg, agent_cfg, scheduler, seed = 42+ ex_num)
+    avg_job_duration = run_episode(env_cfg, agent_cfg, scheduler, seed = 42+ex_num)
 
     print(f"Done! Average job duration: {avg_job_duration:.1f}s", flush=True)
     return avg_job_duration
@@ -79,6 +83,8 @@ def run_episode(env_cfg,  agent_cfg, scheduler, seed=1234):
     if isinstance(scheduler, NeuralScheduler) or isinstance(scheduler, HybridHeuristicScheduler):
         env = NeuralActWrapper(env)
         env = scheduler.obs_wrapper_cls(env)
+    if isinstance(scheduler, NeuralScheduler):
+        scheduler.actor.eval()  # set to evaluation mode
 
     obs, _ = env.reset(seed=seed, options=None)
     terminated = truncated = False

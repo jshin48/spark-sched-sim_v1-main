@@ -105,6 +105,8 @@ class SparkSchedSimEnv(Env):
         self.total_num_completed_task = 0
         self.total_completed_task_duration = 0
         self.pod_creation_time = env_cfg["pod_creation_time"]
+        self.cpt_scale = env_cfg["cpt_scale"]
+        self.num_node_scale = env_cfg["num_node_scale"]
         
         self.action_space = sp.Dict(
             {
@@ -315,6 +317,8 @@ class SparkSchedSimEnv(Env):
             return
 
         stage = self.stage_selection_map[action["stage_idx"]]
+        #print("selected job id:",stage.job_id, "num_exec:",action["num_exec"])
+
         assert (
             stage in self.schedulable_stages
         ), "the selected stage is not currently schedulable"
@@ -452,18 +456,23 @@ class SparkSchedSimEnv(Env):
                 scheduable_jobs_cpt[job_id] = max(stage_cpts)
 
         job_cpt_rank = {key: rank for rank, key in enumerate(sorted(scheduable_jobs_cpt, key=scheduable_jobs_cpt.get, reverse=True), 1)}
-
+        #print("-------------------------------------------------------")
+        #print("id, cpt_rank, cpt, DRA_exec_cap")
         for i, job_id in enumerate(self.active_job_ids):
             if job_id in scheduable_jobs_cpt.keys():
                 DRA_exec_cap[i] = int(np.ceil(self.num_executors * job_cpt_rank[job_id] / len(scheduable_jobs_cpt)))
+                #print(job_id, job_cpt_rank[job_id], scheduable_jobs_cpt[job_id], DRA_exec_cap[i])
             else:
                 DRA_exec_cap[i] = 0
-
+        #print("-------------------------------------------------------")
         try:
             nodes = np.vstack(nodes).astype(np.float32)
         except ValueError:
             # there are no active stages
             nodes = np.zeros((0, self.NUM_NODE_FEATURES), dtype=np.float32)
+
+
+
 
         #edge_links is a list of edge links shown as [start node, sink node] where start node is currently active.
         # [[ 0  2], [ 0  9], [ 1  2], [ 2  4], [ 3  4], ...
@@ -483,9 +492,8 @@ class SparkSchedSimEnv(Env):
             "DRA_exec_cap": DRA_exec_cap,
         }
 
-        #print('dag_batch_dtype.edge_links.T:',obs["dag_batch"].edge_links.T.dtype)
-        # update stage action space to reflect the current number of active
-        # stages
+        # print('dag_batch_dtype.edge_links.T:',obs["dag_batch"].edge_links.T.dtype)
+        # update stage action space to reflect the current number of active stages
         self.observation_space["dag_ptr"].feature_space.n = len(nodes) + 1
         self.action_space["stage_idx"].n = len(nodes) + 1
 

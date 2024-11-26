@@ -19,18 +19,24 @@ def load_csv(csv_path):
 
 def load_dataframe(csv_path):
     with open(csv_path) as f:
-        df = pd.read_csv(f, skiprows=2, header=None)
+        df = pd.read_csv(f, skiprows=3, header=None)
     return df
 
 
 def train_model(cfg, lines, df):
     cat1 = lines[0]
     cat2 = lines[1]
+    cat3 = lines[2]
 
+    print(df.dtypes)
     for i in range(len(df)):
         curr_time = time.time()
         for j in range(len(cat1)):
-            cfg[cat1[j]][cat2[j]] = df.iloc[i][j]
+            if cat3[j] == '':
+                cfg[cat1[j]][cat2[j]] = df.iloc[i][j]
+            else:
+                cfg[cat1[j]][cat2[j]][cat3[j]] = df.iloc[i][j]
+
         cfg['trainer']['artifacts_dir'] = "models/" + str(cfg['agent']['agent_cls']) \
                                           + "/" + str(cfg['env']['data_sampler_cls']) \
                                           + "/" + str(cfg['trainer']['artifacts_dir'])
@@ -42,7 +48,7 @@ def train_model(cfg, lines, df):
 def main():
     parser = argparse.ArgumentParser(description='Process some file paths.')
     parser.add_argument('--config_path', type=str, default='config/hyperheuristic_tpch.yaml')
-    parser.add_argument('--csv_path', type=str, default='results/0909/train_hyper_tpch.csv')
+    parser.add_argument('--csv_path', type=str, default='results/1008/new_basis_train.csv')
 
     # Parse arguments
     args = parser.parse_args()

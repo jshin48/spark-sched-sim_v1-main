@@ -96,4 +96,7 @@ env:
   mean_time_limit: 2.e+7
   # choose from None, 'static' (integer), 'DTS'
   splitting_rule: 'None' #'DTS','None' or integer
+  # data normalization
+  cpt_scale: 100000
+  num_node_scale: 2
 
