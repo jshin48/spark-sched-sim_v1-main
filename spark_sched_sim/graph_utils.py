@@ -74,7 +74,7 @@ def obs_to_pyg(obs: ObsType) -> Batch:
 
     dag_batch["stage_mask"] = torch.tensor(obs["stage_mask"], dtype=bool)
     dag_batch["exec_mask"] = torch.from_numpy(obs["exec_mask"])
-    dag_batch["num_nodes_per_dag"] = ptr_to_counts(dag_batch.ptr)
+    dag_batch["num_nodes_per_dag"] = ptr_to_counts(dag_batch.ptr) #dag_batch.num_nodes_per_dag has the same value as num_nodes_per_dag
 
     if "edge_masks" in obs:
         dag_batch["edge_masks"] = torch.from_numpy(obs["edge_masks"])

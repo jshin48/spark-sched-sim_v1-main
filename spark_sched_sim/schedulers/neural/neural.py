@@ -280,8 +280,8 @@ class NeuralScheduler(Scheduler):
         # print(f"Updated embeddings: {updated_embeddings}")
 
         # Check differences
-        #diff = updated_embeddings - initial_embeddings
-        #print(f"Difference in embeddings: {diff}")
+        # diff = updated_embeddings - initial_embeddings
+        # print(f"Difference in embeddings: {diff}")
 
 
 def make_mlp(input_dim, hid_dims, output_dim, act_cls, act_kwargs=None):
@@ -387,73 +387,120 @@ class ExecPolicyNetwork(nn.Module):
         return exec_actions
 
 class HeuristicPolicyNetwork(nn.Module):
-    def __init__(self, embedding_model, num_heuristics,
-        list_heuristics, input_feature, emb_dims, mlp_kwargs):
+    def __init__(self, embedding_model, num_heuristics, list_heuristics, num_node_features,
+                 input_feature, emb_dims, mlp_kwargs):
 
         super().__init__()
         self.num_heuristics = num_heuristics
         self.list_heuristics = list_heuristics
         self.embedding_model = embedding_model
         self.input_feature = input_feature
+        self.total_feature_list = ["num_queue", "node_features", "avg_glob", "avg_dag", "avg_node",
+                                   "cpt_mean", "cpt_var", "children_mean", "children_var"]
 
-        self.total_feature_list = ["num_queue", "glob", "cpt_mean", "cpt_var", "children_mean", "children_var"]
+        dim_feature_list = [1, num_node_features, emb_dims["node"], emb_dims["dag"], emb_dims['glob'],
+                            1, 1, 1, 1]
 
         feature_in_use = [feature in self.input_feature for feature in self.total_feature_list]
-        dim_feature_list = [1, emb_dims['glob'], 1, 1, 1, 1]
         input_dim = sum(dim for dim, use in zip(dim_feature_list, feature_in_use) if use) + emb_dims['heuristic']
 
-        #input_dim = 1+emb_dims['glob'] + emb_dims['heuristic']
+        # MLP for scoring heuristics
         self.mlp_score = make_mlp(input_dim, output_dim=1, **mlp_kwargs)
 
     def forward(self, dag_batch, h_dict):
+        batch_size = h_dict['glob'].shape[0]
         input_matrix = []
-        h_glob_rpt = h_dict['glob'].repeat_interleave(self.num_heuristics, dim=0)
-
+        # Feature inclusion based on `input_feature`
         if "num_queue" in self.input_feature:
-            num_queue = torch.sum(dag_batch["stage_mask"]).repeat(h_glob_rpt.shape[0], 1)
+            try:
+                num_queue = torch.zeros(batch_size,1)
+                for i in range(batch_size):
+                    num_queue[i] = dag_batch.num_nodes_per_obs[i]
+            except:
+                num_queue = torch.sum(dag_batch["stage_mask"])
+
+            num_queue = num_queue.repeat(self.num_heuristics, 1)
             input_matrix.append(num_queue)
 
-        if "glob" in self.input_feature:
-            input_matrix.append(h_glob_rpt)
+        # if "node_features" in self.input_feature:
+        #     node_features = dag_batch.x[stage_mask].mean(dim=0, keepdim=True)
+        #     input_matrix.append(node_features.repeat(batch_size * self.num_heuristics, 1))
 
-        if "cpt_mean" in self.input_feature or "cpt_var" in self.input_feature:
-            stage_mask = dag_batch["stage_mask"].bool()
-            stage_cpt = dag_batch.x[:,5]
+        # if "cpt_mean" in self.input_feature or "cpt_var" in self.input_feature:
+        #     stage_cpt = dag_batch.x[:, 5][stage_mask]
+        #     if "cpt_mean" in self.input_feature:
+        #         mean_cpt = torch.mean(stage_cpt).repeat(batch_size * self.num_heuristics, 1)
+        #         input_matrix.append(mean_cpt)
+        #     if "cpt_var" in self.input_feature:
+        #         var_cpt = torch.std(stage_cpt).repeat(batch_size * self.num_heuristics, 1)
+        #         input_matrix.append(var_cpt)
+        #
+        # if "children_mean" in self.input_feature or "children_var" in self.input_feature:
+        #     stage_children = dag_batch.x[:, 6][stage_mask]
+        #     if "children_mean" in self.input_feature:
+        #         mean_children = torch.mean(stage_children).repeat(batch_size * self.num_heuristics, 1)
+        #         input_matrix.append(mean_children)
+        #     if "children_var" in self.input_feature:
+        #         var_children = torch.std(stage_children).repeat(batch_size * self.num_heuristics, 1)
+        #         input_matrix.append(var_children)
 
-            masked_stages_cpt = stage_cpt[stage_mask]
+        # Compute averages of h_dict features
+        h_glob_avg = h_dict['glob']  # (num batch, glob_dim)
+        #h_dag_avg = h_dict['dag'].mean(dim=0, keepdim=True)  # (, dag_dim) need to take an average of all dags per scheduling decision
+        #h_node_avg = h_dict['node'].mean(dim=0, keepdim=True)  # (1, node_dim) need to take an average of all nodes per scheduling decision
 
-            if "cpt_mean" in self.input_feature:
-                mean_cpt = torch.mean(masked_stages_cpt).repeat(h_glob_rpt.shape[0],1)
-                input_matrix.append(mean_cpt)
-            if "cpt_var" in self.input_feature:
-                var_cpt = torch.std(masked_stages_cpt).repeat(h_glob_rpt.shape[0],1)
-                input_matrix.append(var_cpt)
+        dag_sum = torch.zeros(batch_size, h_dict['dag'].shape[1])  # (2, dag_dim)
+        dag_count = torch.zeros(batch_size, 1)  # (2, 1)
+        node_sum = torch.zeros(batch_size, h_dict['dag'].shape[1])  # (2, dag_dim)
+        node_count = torch.zeros(batch_size, 1)  # (2, 1)
 
-        if "children_mean" in self.input_feature or "children_var" in self.input_feature:
-            stage_mask = dag_batch["stage_mask"].bool()
-            stage_children = dag_batch.x[:,6]
+        dag_batch_start, dag_batch_end = 0, 0
+        node_batch_start, node_batch_end = 0, 0
+        try:
+            for i in range(batch_size):
+                dag_batch_end = dag_batch.num_dags_per_obs[i] + dag_batch_end
+                dag_sum[i] = h_dict['dag'][dag_batch_start:dag_batch_end].sum(dim=0)
+                dag_count[i] = dag_batch_end - dag_batch_start
+                dag_batch_start = dag_batch_end
 
-            masked_stages_children = stage_children[stage_mask ]
+                node_batch_end = dag_batch.num_nodes_per_obs[i] + node_batch_end
+                node_sum[i] = h_dict['node'][node_batch_start:node_batch_end].sum(dim=0)
+                node_count[i] = node_batch_end - node_batch_start
+                node_batch_start = node_batch_end
 
-            if "children_mean" in self.input_feature:
-                mean_children = torch.mean(masked_stages_children).repeat(h_glob_rpt.shape[0],1)
-                input_matrix.append(mean_children)
-            if "children_var" in self.input_feature:
-                var_children = torch.std(masked_stages_children).repeat(h_glob_rpt.shape[0],1)
-                input_matrix.append(var_children)
+            h_dag_avg = dag_sum / dag_count
+            h_node_avg = node_sum / node_count
+        except:
+            h_dag_avg = h_dict['dag'].mean(dim=0, keepdim=True)
+            h_node_avg = h_dict['node'].mean(dim=0, keepdim=True)
 
-        #print("input_matrix:",torch.cat(input_matrix, dim=1))
+        # Include averaged features if specified
+        if "avg_glob" in self.input_feature:
+            input_matrix.append(h_glob_avg.repeat(self.num_heuristics, 1))
+        if "avg_dag" in self.input_feature:
+            input_matrix.append(h_dag_avg.repeat(self.num_heuristics, 1))
+        if "avg_node" in self.input_feature:
+            input_matrix.append(h_node_avg.repeat(self.num_heuristics, 1))
+
+        # Append heuristic embedding
         action_indices = torch.LongTensor(range(self.num_heuristics))
         heuristic_actions = self.embedding_model(action_indices)
-        heuristic_actions = heuristic_actions.repeat_interleave(h_dict['glob'].shape[0], output_size=h_glob_rpt.shape[0], dim=0)
+        heuristic_actions = heuristic_actions.repeat_interleave(batch_size, output_size=batch_size * self.num_heuristics, dim=0)
         input_matrix.append(heuristic_actions)
 
-        # residual connections to original features
-        status_inputs = torch.cat(input_matrix, dim=1)
+        # Final input feature matrix
+        state_inputs = torch.cat(input_matrix, dim=1)
+        # if len(dag_batch) > 2:
+        #     print("state_inputs")
+        #     for i in range(len(state_inputs)):
+        #         print(state_inputs[i].tolist())
+        #     print("input_matrix",state_inputs)
+        # Compute heuristic scores
+        heuristic_scores = self.mlp_score(state_inputs).squeeze(-1)
 
-        heuristic_scores = self.mlp_score(status_inputs).squeeze(-1)
-        #print("heuristic_actions",heuristic_actions)
+
         return heuristic_scores
+
 
 class HeuristicPolicyNetwork_old(nn.Module):
     def __init__(

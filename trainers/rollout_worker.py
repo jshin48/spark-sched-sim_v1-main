@@ -139,7 +139,6 @@ class RolloutWorkerSync(RolloutWorker):
         terminated = truncated = False
         while not (terminated or truncated):
             action, lgprob = self.agent(obs)
-            #print("--action from rollout_workder", action)
             new_obs, reward, terminated, truncated, info = self.env.step(action)
             next_wall_time = info["wall_time"]
 

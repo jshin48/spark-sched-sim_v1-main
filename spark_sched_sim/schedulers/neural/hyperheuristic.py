@@ -98,9 +98,9 @@ class ActorNetwork(nn.Module):
         emb_dims = {"resource_heuristic":embed_dim, "heuristic":embed_dim,"node": embed_dim, "dag": embed_dim, "glob": embed_dim}
 
         self.heuristic_policy_network = HeuristicPolicyNetwork(
-            self.embedding_model, num_heuristics, list_heuristics, input_feature, emb_dims, policy_mlp_kwargs
+            self.embedding_model, num_heuristics,
+            list_heuristics, num_node_features, input_feature, emb_dims, policy_mlp_kwargs
         )
-
         if resource_allocation == "DNN":
             self.exec_policy_network = ExecPolicyNetwork(
                 num_executors, num_dag_features, emb_dims, policy_mlp_kwargs

@@ -211,7 +211,7 @@ class TPCHDataSampler(BaseDataSampler):
         job.sample_type = "tpch"
 
         summary = {"job_idx":job_id, "adj_mat": adj_mat, "task_duration": task_duration_data, "cpt": [stage.cpt for stage in stages]}
-
+        #print("job_idx",job_id,'num_stage', len(stages), 'num_tasks', sum([stage.num_tasks for stage in stages]) )
         return job
 
     # Return cpt of each node in a DAG

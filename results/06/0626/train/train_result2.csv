@@ -1,5 +1,0 @@
-num_iterations,agent_cls,data_sampler_cls,job_arrival_cap,job_arrival_rate,num_heuristics,resource_allocation,splitting_rule,checkpointing_freq,artifacts_dir,training time
-100,HyperHeuristicScheduler,AlibabaDataSampler,500,0.000125,4,DRA,None,5,4_DRA_cap500_int8,9279.895135879517
-100,HyperHeuristicScheduler,TPCHDataSampler,100,2.08333333333333e-05,4,DRA,None,5,4_DRA_cap100_int48,2015.9304904937744
-100,DecimaScheduler,AlibabaDataSampler,500,0.000125,2,DNN,None,5,cap500_int8,4490.086464166641
-100,DecimaScheduler,TPCHDataSampler,100,2.08333333333333e-05,2,DNN,None,5,cap100_int48,1834.9432983398438
