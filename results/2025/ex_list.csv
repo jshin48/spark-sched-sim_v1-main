@@ -1,0 +1,2 @@
+id,scheduler_name,input_feature,num_heuristics,resource_allocation,model_num_train,model_name,num_executors,cpt_scale,num_node_scale,train_data,test_data,job_arrival_rate,job_arrival_cap,num_experiments
+4,HyperHeuristicScheduler,"""num_queue"",""avg_glob"", ""avg_dag"", ""avg_node""",2,DRA,100,Basis+avghdict_0324,20,1,1,TPCHDataSampler,AlibabaDataSampler,0.000125,100,100
