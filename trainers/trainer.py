@@ -74,6 +74,10 @@ class Trainer(ABC):
                 | {k: train_cfg[k] for k in ["opt_cls", "opt_kwargs", "max_grad_norm"]}
         )
         self.agent = make_scheduler(self.agent_cfg)
+
+        # Measure best_avg_job_duration for hyper-parameter tuning purpose
+        self.best_avg_job_duration = None
+
         assert isinstance(self.agent, NeuralScheduler), "scheduler must be trainable."
 
     def train(self):
@@ -155,6 +159,8 @@ class Trainer(ABC):
             )
             past_comp_time = curr_comp_time
             all_job_duration.append(avg_job_dur)
+
+        self.best_avg_job_duration = np.mean(all_job_duration)
         print("all_job_duration",all_job_duration)
         self._cleanup()
 

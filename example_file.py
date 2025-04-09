@@ -18,9 +18,9 @@ from spark_sched_sim.wrappers import NeuralActWrapper
 from spark_sched_sim import metrics
 from param import *
 
-args.input_file = './results/1111/DRAfix_ex_list.csv'
-args.result_folder = './results/1111/'
-args.output_file = 'DRAfix_result.csv'
+args.input_file = './results/2025/ex_list.csv'
+args.result_folder = './results/2025/'
+args.output_file = 'result.csv'
 
 
 def main():

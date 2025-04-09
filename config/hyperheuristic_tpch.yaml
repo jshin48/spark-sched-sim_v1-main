@@ -1,7 +1,7 @@
 trainer:
   # where the training happens (cpu, cuda, cuda:0, ...)
   # note: rollouts are always collected using only the CPU
-  device: 'cuda:0'
+  device: 'cpu'
 
   # name of the trainer's class
   trainer_cls: 'PPO'
@@ -13,8 +13,7 @@ trainer:
   num_sequences: 2
 
   # number of rollouts experienced per unique job sequence
-  # `num_sequences` x `num_rollouts`
-  #  = total number of rollouts per training iteration
+  # `num_sequences` x `num_rollouts`  #  = total number of rollouts per training iteration
   #  = number of rollout workers running in parallel
   num_rollouts: 2
 
@@ -65,9 +64,9 @@ trainer:
 
 agent:
   agent_cls: 'HyperHeuristicScheduler'
-  embed_dim: 16
+  embed_dim: 32
   gnn_mlp_kwargs:
-    hid_dims: [128, 64] #JS:42
+    hid_dims: [64, 64] #JS:42
     act_cls: 'LeakyReLU'
     act_kwargs:
       inplace: True
