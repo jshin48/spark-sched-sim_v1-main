@@ -23,7 +23,7 @@ class NeuralActWrapper(ActionWrapper):
         )
 
     def action(self, act):
-        return {"stage_idx": act["stage_idx"], "num_exec": 1+act["num_exec"]}
+        return {"heuristic_idx":act["heuristic_idx"], "stage_idx": act["stage_idx"], "num_exec": 1+act["num_exec"]}
 
 
 class NeuralObsWrapper(ObservationWrapper):

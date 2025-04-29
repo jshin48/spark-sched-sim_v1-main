@@ -110,6 +110,7 @@ class SparkSchedSimEnv(Env):
         
         self.action_space = sp.Dict(
             {
+                'heuristic_idx': sp.Discrete(self.num_heuristics, start=0),
                 # stage selection
                 # NOTE: upper bound of this space is dynamic, equal to
                 # the number of active stages. Initialized to 1.
@@ -470,9 +471,6 @@ class SparkSchedSimEnv(Env):
         except ValueError:
             # there are no active stages
             nodes = np.zeros((0, self.NUM_NODE_FEATURES), dtype=np.float32)
-
-
-
 
         #edge_links is a list of edge links shown as [start node, sink node] where start node is currently active.
         # [[ 0  2], [ 0  9], [ 1  2], [ 2  4], [ 3  4], ...

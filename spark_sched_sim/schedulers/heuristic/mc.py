@@ -1,5 +1,4 @@
 import numpy as np
-
 from .heuristic import HeuristicScheduler
 
 class McScheduler(HeuristicScheduler):
@@ -10,7 +9,6 @@ class McScheduler(HeuristicScheduler):
         self.resource_allocation = resource_allocation
 
     def schedule(self, obs):
-        #print("In MC")
         job_ptr = np.array(obs["dag_ptr"])
         stage_mask = obs["stage_mask"]  # List of True or False if a corresponding node is schedulable. see "spark_sched_sim.py 439"
         stage_num_children = obs["dag_batch"].nodes[:, 6]

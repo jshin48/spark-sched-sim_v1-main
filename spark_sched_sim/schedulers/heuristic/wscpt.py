@@ -57,7 +57,7 @@ class WscptScheduler(HeuristicScheduler):
                         if obs["exec_supplies"][selected_job_idx] >= obs["DRA_exec_cap"][selected_job_idx]:
                             job_cpt[selected_job_idx] = np.inf
                             continue
-
+                    #If
                     if job_cpt[min(job_cpt)] == np.inf:
                         selected_job_idx = min(job_cpt, key=job_cpt.get)
                         obs["DRA_exec_cap"][selected_job_idx] = self.num_executors

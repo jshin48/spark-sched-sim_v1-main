@@ -150,7 +150,7 @@ class AlibabaDataSampler(BaseDataSampler):
         job.query_size = query_size
         job.sample_type = "alibaba"
 
-        summary = {"job_idx":job_id, "adj_mat": adj_mat, "task_duration": task_duration_data, "cpt": [stage.cpt for stage in stages]}
+        #summary = {"job_idx":job_id, "adj_mat": adj_mat, "task_duration": task_duration_data, "cpt": [stage.cpt for stage in stages]}
 
         return job
 

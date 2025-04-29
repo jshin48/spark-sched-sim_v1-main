@@ -47,7 +47,7 @@ def train_model(cfg, lines, df):
 def main():
     parser = argparse.ArgumentParser(description='Process some file paths.')
     parser.add_argument('--config_path', type=str, default='config/hyperheuristic_tpch.yaml')
-    parser.add_argument('--csv_path', type=str, default='results/2025/train_list.csv')
+    parser.add_argument('--csv_path', type=str, default='results/2025/0407/train_list.csv')
 
     # Parse arguments
     args = parser.parse_args()

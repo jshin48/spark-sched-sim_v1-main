@@ -41,7 +41,8 @@ class Job:
         # count of stages who have no remaining tasks
         self.saturated_stage_count = 0
 
-        self.init_frontier()
+        if dag is not None:
+            self.init_frontier()
 
         self.cpt = cpt
 

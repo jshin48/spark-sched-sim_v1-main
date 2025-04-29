@@ -1,4 +1,5 @@
-import random, sys
+import sys
+import os
 
 import torch
 import torch.nn as nn
@@ -124,7 +125,10 @@ class NeuralScheduler(Scheduler):
             heuristic_idx = -1
 
         # 3. retrieve index of selected stage's job
-        stage_idx_glob = pyg_utils.mask_to_index(stage_mask)[stage_idx]
+        try:
+            stage_idx_glob = pyg_utils.mask_to_index(stage_mask)[stage_idx]
+        except:
+            print(obs["dag_ptr"])
         job_idx = stage_to_job_map[stage_idx_glob].item()
 
         # 4. select the number of executors to add to that stage, conditioned
