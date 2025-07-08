@@ -53,7 +53,7 @@ class PPO(Trainer):
             returns_list,
             baselines_list,
             lgprobs_list,
-        ) = self._preprocess_rollouts(rollout_buffers) #trainer.py line169 -> Calculrate returns at k using rewards
+        ) = self._preprocess_rollouts(rollout_buffers) #trainer.py line169 -> Calculate returns at k using rewards
 
         returns = np.array(list(chain(*returns_list)))
         baselines = np.concatenate(baselines_list)

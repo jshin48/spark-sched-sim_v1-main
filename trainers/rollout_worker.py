@@ -70,11 +70,17 @@ class RolloutWorker(ABC):
         # acquire it downloads the dataset, and any subsequent processes notices
         # that the dataset is already present once it acquires the lock.
         with lock:
-            env = gym.make("spark_sched_sim:SparkSchedSimEnv-v0", env_cfg=env_cfg, agent_cfg = agent_cfg)
+            env = gym.make("spark_sched_sim:SparkSchedSimEnv-v0", env_cfg=env_cfg, agent_cfg=agent_cfg)
 
         env = StochasticTimeLimit(env, env_cfg["mean_time_limit"])
         env = NeuralActWrapper(env)
-        env = self.agent.obs_wrapper_cls(env)
+        scales = {
+            "num_tasks": env_cfg["num_tasks_scale"],
+            "work": env_cfg["work_scale"],
+            "cpt": env_cfg["cpt_scale"],
+            "num_nodes": env_cfg["num_node_scale"]
+        }
+        env = self.agent.obs_wrapper_cls(env, scales)
         self.env = env
 
         # IMPORTANT! Each worker needs to produce unique rollouts, which are

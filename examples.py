@@ -13,7 +13,12 @@ from spark_sched_sim.schedulers import (
     RoundRobinScheduler,
     NeuralScheduler,
     make_scheduler,
-    HybridheuristicScheduler,
+    HybridHeuristicScheduler,
+    WscptScheduler,
+    McScheduler,
+    SjfScheduler,
+    LjfScheduler,
+    FifoScheduler
 )
 from spark_sched_sim.wrappers import NeuralActWrapper
 from spark_sched_sim import metrics
@@ -27,16 +32,16 @@ ENV_CFG = {
     "pod_creation_time": 10,#100.,
     "train_data": "alibaba",
     "test_data" : "alibaba",
-    "render_mode": "human", #human
+    "render_mode": None, #human
     "hybrid_rule_threshold" : 4,
     "decima_model_name": "model_100_DNN",
     "hyper_model_name": "model_5_DNN_None/100/model", #The name of the model should match with resource allocation param
-    # "num_heuristics" : 5,
-    # "list_heuristics": ['MC','WSCPT'],
-    "resource_allocation": "DNN", #HyperHeuristic, Random, DNN, DRA
+    "resource_allocation": "DRA", #HyperHeuristic, Random, DNN, DRA
     "num_resource_heuristics" : 3,
     "list_resource_heuristics" : ['Maximum','DRA','fair'],
-    "splitting_rule": "None" #DTS, int, "None"
+    "splitting_rule": "None", #DTS, int, "None",
+    "cpt_scale" : 1.0, # scale for cpt values in the graph
+    "num_node_scale" : 1.0 # scale for number of nodes in the graph
 }
 
 def main():
@@ -59,9 +64,10 @@ def main():
     #
     # sched_map[args.sched]()
 
+    sjf_example()
     #fair_example()
-    decima_example()
-    hyperheuristic_example()
+    #decima_example()
+    #hyperheuristic_example()
     #hybridheuristic_example()
 
 def fair_example():
@@ -69,6 +75,20 @@ def fair_example():
     scheduler = RoundRobinScheduler(ENV_CFG["num_executors"], dynamic_partition=True)
 
     print("Example: Fair Scheduler")
+    print("Env settings:")
+    pprint(ENV_CFG)
+
+    print("Running episode...")
+    avg_job_duration = run_episode(ENV_CFG, scheduler)
+
+    print(f"Done! Average job duration: {avg_job_duration:.1f}s", flush=True)
+    print()
+
+def sjf_example():
+    # Fair scheduler
+    scheduler = SjfScheduler(ENV_CFG["num_executors"], ENV_CFG["resource_allocation"])
+
+    print("Example: SJF Scheduler")
     print("Env settings:")
     pprint(ENV_CFG)
 
@@ -116,8 +136,6 @@ def hyperheuristic_example():
     env_cfg["num_heuristics"] = cfg["env"]["num_heuristics"]
     env_cfg["list_heuristics"] = cfg["env"]["list_heuristics"]
     env_cfg["plot_title"]= Path("./test_results/"+"graph_hyper.png")
-    #env_cfg["plot_title"] = Path("./test_results/"+ENV_CFG["train_data"]+"/hyper/hyper_" +ENV_CFG["train_data"]+"_"+ENV_CFG["test_data"] +
-    # "_" + ENV_CFG["hyper_model_name"] + "_" + str(ENV_CFG["splitting_rule"])+".png")
     pprint(env_cfg)
 
     print("Running episode...")
@@ -133,7 +151,7 @@ def hybridheuristic_example():
     env_cfg["list_heuristics"] = cfg["env"]["list_heuristics"]
     env_cfg["plot_title"] = "Hybrid_"+ENV_CFG["test_data"]+"_k"+str(ENV_CFG["hybrid_rule_threshold"])+".png"
 
-    scheduler = HybridheuristicScheduler(ENV_CFG["num_executors"],ENV_CFG["hybrid_rule_threshold"])
+    scheduler = HybridHeuristicScheduler(ENV_CFG["num_executors"],ENV_CFG["hybrid_rule_threshold"])
 
     print("Example: Hybrid-Heuristic")
     print("Env settings:")
@@ -153,9 +171,9 @@ def run_episode(env_cfg, scheduler, seed=1234):
         sys.exit("Check the test data")
     env = gym.make("spark_sched_sim:SparkSchedSimEnv-v0", env_cfg=env_cfg)
 
-    if isinstance(scheduler, NeuralScheduler) or isinstance(scheduler, HybridheuristicScheduler):
-        env = NeuralActWrapper(env)
-        env = scheduler.obs_wrapper_cls(env)
+    #if isinstance(scheduler, NeuralScheduler) or isinstance(scheduler, HybridHeuristicScheduler):
+    env = NeuralActWrapper(env)
+    env = scheduler.obs_wrapper_cls(env)
 
     obs, _ = env.reset(seed=seed, options=None)
     terminated = truncated = False
@@ -168,7 +186,7 @@ def run_episode(env_cfg, scheduler, seed=1234):
         obs, _, terminated, truncated, _ = env.step(action)
 
     avg_job_duration = metrics.avg_job_duration(env) * 1e-3
-    #metrics.print_task_job_time(env)
+    # metrics.print_task_job_time(env)
     # cleanup rendering
     env.close()
 

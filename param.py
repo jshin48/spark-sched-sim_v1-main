@@ -38,6 +38,8 @@ parser.add_argument('--result_folder', type=str, default="./test_results/0521/")
 parser.add_argument('--output_file', type=str, default="result2.csv")
 parser.add_argument('--cpt_scale', type=int, default=1)
 parser.add_argument('--num_node_scale', type=int, default=1)
+parser.add_argument('--work_scale', type=int, default=1)
+parser.add_argument('--num_tasks_scale', type=int, default=1)
 
 args = parser.parse_args()
 

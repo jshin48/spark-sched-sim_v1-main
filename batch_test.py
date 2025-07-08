@@ -9,7 +9,7 @@ from spark_sched_sim.schedulers import (
     RoundRobinScheduler,
     NeuralScheduler,
     make_scheduler,
-    HybridheuristicScheduler,
+    HybridHeuristicScheduler,
 )
 
 ENV_CFG = {

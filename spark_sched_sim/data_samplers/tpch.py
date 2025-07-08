@@ -49,6 +49,12 @@ class TPCHDataSampler(BaseDataSampler):
         if not osp.isdir("data/tpch"):
             self._download_tpch_dataset()
 
+        # To estimate the scales of node features and to use it for normalization
+        self.num_tasks_scale = 0
+        self.work_scale = 0
+        self.cpt_scale = 0
+        self.num_node_scale = 0
+
     def reset(self, np_random: np.random.RandomState):
         self.np_random = np_random
 
@@ -240,6 +246,18 @@ class TPCHDataSampler(BaseDataSampler):
                 if np.all(cpt[children_idx[stage_id]] > 0) and cpt_updated_count[stage_id] == 0:
                         cpt[stage_id] = np.max(cpt[children_idx[stage_id]]) + each_task_duration[stage_id]
                         cpt_updated_count[stage_id] = 1
+
+        if self.num_tasks_scale < max(num_tasks_list):
+            self.num_tasks_scale = max(num_tasks_list)
+
+        if self.work_scale < max(each_node_duration):
+            self.work_scale = max(each_node_duration)
+
+        if self.cpt_scale < max(cpt):
+            self.cpt_scale = max(cpt)
+
+        if self.num_node_scale < max(num_children):
+            self.num_node_scale = max(num_children)
 
         return cpt, num_children
 

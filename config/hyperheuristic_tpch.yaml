@@ -25,7 +25,7 @@ trainer:
 
   # if checkpointing_freq = n, then every n iterations, the best model from the
   # past m iterations is saved
-  checkpointing_freq: 10
+  checkpointing_freq: 100
 
   # if true, then records training metrics to a tensorboard file
   use_tensorboard: False
@@ -76,7 +76,7 @@ agent:
     act_cls: 'Tanh'
   num_heuristics: 2
   list_heuristics: [ 'MC','WSCPT' ]
-  input_feature: ['num_queue',"glob" ] #["num_queue","glob","cpt_mean","cpt_var","children_mean","children_var"]
+  input_feature: ['num_queue',"avg_glob" ] #["num_queue","glob","cpt_mean","cpt_var","children_mean","children_var"]
   num_resource_heuristics: 2
   list_resource_heuristics: [ 'Maximum','DRA' ]
   # choose from 'Random', 'DNN', 'DRA', 'HyperHeuristic'
@@ -88,9 +88,9 @@ env:
   num_executors: 100
   job_arrival_cap: 200
   job_arrival_rate: 4.e-5
-  moving_delay: 2000.
-  warmup_delay: 1000.
-  pod_creation_time: 100.
+  moving_delay: 0 #2000.
+  warmup_delay: 0 #1000.
+  pod_creation_time: 0 #100.
   data_sampler_cls: 'TPCHDataSampler'
   mean_time_limit: 2.e+7
   # choose from None, 'static' (integer), 'DTS'
