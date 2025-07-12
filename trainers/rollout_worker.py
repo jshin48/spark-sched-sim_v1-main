@@ -139,6 +139,9 @@ class RolloutWorkerSync(RolloutWorker):
         rollout_buffer = RolloutBuffer()
 
         obs, _ = self.env.reset(seed=self.seed)
+        # print("Observation:", obs)
+        # print("Observation Space:", self.env.observation_space)
+        # print("Is observation valid?", self.env.observation_space.contains(obs))
         self.reset_count += 1
 
         wall_time = 0

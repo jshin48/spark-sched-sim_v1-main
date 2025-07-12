@@ -19,7 +19,7 @@ def print_task_job_time(env):
 
     f = open('./results/detail/'+str(env.agent_cls)+str(current_time)+'.csv', 'w', encoding='UTF8', newline='')
     writer = csv.writer(f)
-    header = ['job_id','stage_id','task_id','job_arrival_t','task_start_t','task_end_t','task_dur','job_end_t','job_dur']
+    header = ['job_id','stage_id','task_id','job_arrival_t','task_start_t','task_end_t','task_dur','job_end_t','job_dur','executor_id','cpt']
     writer.writerow(header)
     for job_id in env.unwrapped.active_job_ids + list(env.unwrapped.completed_job_ids):
         job = env.unwrapped.jobs[job_id]
@@ -27,7 +27,7 @@ def print_task_job_time(env):
         for stage in job.stages:
             for task in stage.completed_tasks:
                 row = [job_id,stage.id_,task.id_,job.t_arrival,task.t_accepted,task.t_completed,
-                      int(task.t_completed-task.t_accepted), t_end,int(t_end-job.t_arrival)]
+                      int(task.t_completed-task.t_accepted), t_end,int(t_end-job.t_arrival),task.executor_id,stage.cpt]
                 writer.writerow(row)
 
 

@@ -8,14 +8,14 @@ from urllib.request import urlopen
 import numpy as np
 import networkx as nx
 
-from .base_data_sampler import BaseDataSampler
+from .data_sampler import DataSampler
 from ..components import Job, Stage
 
 QUERY_SIZES = ["j_10_test"]
 NUM_QUERIES = 28963
 
 
-class AlibabaDataSampler(BaseDataSampler):
+class TPCHDataSampler(DataSampler):
     def __init__(
         self,
         job_arrival_rate: float,
@@ -44,11 +44,18 @@ class AlibabaDataSampler(BaseDataSampler):
         self.warmup_delay = warmup_delay
         self.splitting_rule = splitting_rule
         self.np_random = None
+        self._init_executor_intervals(num_executors)
 
         if not osp.isdir("data/alibaba"):
             print("Alibaba data is unavailable")
 
-    def reset(self, np_random: np.random.RandomState):
+        # To estimate the scales of node features and to use it for normalization
+        self.num_tasks_scale = 0
+        self.work_scale = 0
+        self.cpt_scale = 0
+        self.num_node_scale = 0
+
+    def reset(self, np_random: np.random.Generator):
         self.np_random = np_random
 
     def job_sequence(self, max_time):
@@ -69,6 +76,11 @@ class AlibabaDataSampler(BaseDataSampler):
             # sample time in ms until next arrival
             t += self.np_random.exponential(self.mean_interarrival_time)
             job_idx += 1
+
+        # print("num_tasks_scale:", self.num_tasks_scale,
+        #       "work_scale:", self.work_scale,
+        #       "cpt_scale:", self.cpt_scale,
+        #       "num_node_scale:", self.num_node_scale)
 
         return job_sequence
 
@@ -128,13 +140,13 @@ class AlibabaDataSampler(BaseDataSampler):
         else:
             sys.exit("splitting_rule is invalid @alibaba line 127")
 
-        cpt, num_children = self._get_node_feature(task_duration_list, adj_mat)
+        cpt, num_children = self._get_node_feature(task_duration_list, num_tasks_list, adj_mat)
 
         for stage_id in range(num_stages):
             num_tasks = num_tasks_list[stage_id]
             task_duration = max(task_duration_list[stage_id], 1) #Some tasks have duration less than 1, which recorded as 0 in alibaba data.
 
-            stage = Stage(stage_id, job_id, num_tasks, task_duration,cpt[stage_id], num_children[stage_id])
+            stage = Stage(stage_id, job_id, num_tasks, task_duration, cpt[stage_id], num_children[stage_id])
             stages += [stage]
 
 
@@ -150,12 +162,14 @@ class AlibabaDataSampler(BaseDataSampler):
         job.query_size = query_size
         job.sample_type = "alibaba"
 
-        #summary = {"job_idx":job_id, "adj_mat": adj_mat, "task_duration": task_duration_data, "cpt": [stage.cpt for stage in stages]}
+        # Print summary of job such as job_id, query_num, query_size, num_stages, cpt
+        # print(f"Job ID: {job_id}, task_duration_data: {task_duration_data},"
+        #       f"Num Stages: {num_stages}, num_tasks_list: {num_tasks_list}")
 
         return job
 
     # Return cpt of each node in a DAG
-    def _get_node_feature(self, task_duration_list, adj_mat):
+    def _get_node_feature(self, task_duration_list, num_tasks_list, adj_mat):
         num_node = adj_mat.shape[0]
         num_children = [0] * num_node
         children_idx = [0] * num_node
@@ -166,19 +180,32 @@ class AlibabaDataSampler(BaseDataSampler):
             num_children[stage_id] =  children_idx[stage_id].size
 
         # Find cpt of each stage
-        each_task_duration = [max(task_duration_list[stage_id], 1) for stage_id in range(num_node)]
+        #each_node_duration = [max(task_duration_list[stage_id], 1) for stage_id in range(num_node)]
+        each_node_duration = [max(task_duration_list[stage_id], 1) * num_tasks_list[stage_id] for stage_id in range(num_node)]
         cpt = np.zeros(num_node)
 
         cpt_updated_count = [0] * num_node
         for stage_id in range(num_node):
             if children_idx[stage_id].size == 0:
-                cpt[stage_id] = each_task_duration[stage_id]
+                cpt[stage_id] = each_node_duration[stage_id]
                 cpt_updated_count[stage_id] = 1
 
         while sum(cpt_updated_count) < num_node:
             for stage_id in range(num_node):
                 if np.all(cpt[children_idx[stage_id]] > 0) and cpt_updated_count[stage_id] == 0:
-                        cpt[stage_id] = np.max(cpt[children_idx[stage_id]]) + each_task_duration[stage_id]
+                        cpt[stage_id] = np.max(cpt[children_idx[stage_id]]) + each_node_duration[stage_id]
                         cpt_updated_count[stage_id] = 1
+
+        if self.num_tasks_scale < max(num_tasks_list):
+            self.num_tasks_scale = max(num_tasks_list)
+
+        if self.work_scale < max(each_node_duration):
+            self.work_scale = max(each_node_duration)
+
+        if self.cpt_scale < max(cpt):
+            self.cpt_scale = max(cpt)
+
+        if self.num_node_scale < max(num_children):
+            self.num_node_scale = max(num_children)
 
         return cpt, num_children

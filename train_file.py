@@ -60,8 +60,8 @@ def main():
 
     column_names = [
         "num_iterations", "agent_cls", "input_feature", "num_heuristics", "resource_allocation",
-        "checkpointing_freq", "artifacts_dir", "num_executors", "cpt_scale", "num_node_scale",
-        "data_sampler_cls", "job_arrival_rate", "job_arrival_cap", "opt_kwargs"
+        "checkpointing_freq", "artifacts_dir", "num_executors","data_sampler_cls", "job_arrival_rate",
+        "job_arrival_cap", "opt_kwargs","cpt_scale", "num_node_scale", "num_tasks_scale","work_scale"
     ]
 
     # Define correct data types for each column
@@ -74,14 +74,14 @@ def main():
         "checkpointing_freq": "int64",
         "artifacts_dir": "string",
         "num_executors": "int64",
-        "cpt_scale": "float64",
-        "num_node_scale": "float64",
-        "num_tasks_scale": "float64",
-        "work_scale": "float64",
         "data_sampler_cls": "string",
         "job_arrival_rate": "float64",
         "job_arrival_cap": "int64",
         "opt_kwargs": "float64",
+        "cpt_scale": "float64",
+        "num_node_scale": "float64",
+        "num_tasks_scale": "float64",
+        "work_scale": "float64",
     }
 
     df = load_dataframe(args.csv_path, column_names, dtype_dict)

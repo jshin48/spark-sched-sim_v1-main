@@ -4,9 +4,10 @@ from torch_scatter import segment_csr
 import torch_geometric.utils as pyg_utils
 import torch_sparse
 
-from .neural import NeuralScheduler, StagePolicyNetwork, ExecPolicyNetwork, make_mlp
+from schedulers.Hyperheuristics.scheduler import NeuralScheduler, StagePolicyNetwork, ExecPolicyNetwork
+from schedulers.Hyperheuristics.utils import make_mlp
 from spark_sched_sim.wrappers import DAGNNObsWrapper
-from spark_sched_sim import graph_utils
+from schedulers.Hyperheuristics import utils
 
 
 class DecimaScheduler(NeuralScheduler):

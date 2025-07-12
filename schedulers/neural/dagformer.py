@@ -5,7 +5,7 @@ import torch.nn as nn
 from torch_scatter import segment_max_csr
 import torch_geometric.nn as gnn
 
-from .neural import NeuralScheduler, StagePolicyNetwork, ExecPolicyNetwork
+from schedulers.Hyperheuristics.scheduler import NeuralScheduler, StagePolicyNetwork, ExecPolicyNetwork
 from spark_sched_sim.wrappers import TransformerObsWrapper
 
 

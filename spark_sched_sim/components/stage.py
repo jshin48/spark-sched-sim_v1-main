@@ -12,7 +12,7 @@ class Stage:
             Task(id_=i, stage_id=self.id_, job_id=self.job_id, duration= self.task_duration) for i in range(num_tasks)
         )
         self.num_remaining_tasks = num_tasks
-        self.num_processing_tasks = 0
+        self.num_executing_tasks = 0
         self.num_completed_tasks = 0
         self.is_schedulable = False
         self.cpt = cpt
@@ -42,8 +42,8 @@ class Stage:
         return self.num_completed_tasks == self.num_tasks
 
     @property
-    def num_saturated_tasks(self):
-        return self.num_processing_tasks + self.num_completed_tasks
+    def num_saturated_tasks(self) -> int:
+        return self.num_executing_tasks + self.num_completed_tasks
 
     @property
     def next_task_id(self):
@@ -53,13 +53,13 @@ class Stage:
     def approx_remaining_work(self):
         return self.most_recent_duration * self.num_remaining_tasks
 
-    def start_on_next_task(self):
+    def launch_next_task(self) -> Task:
         assert self.num_saturated_tasks < self.num_tasks
         task = self.remaining_tasks.pop()
         self.num_remaining_tasks -= 1
-        self.num_processing_tasks += 1
+        self.num_executing_tasks += 1
         return task
 
-    def add_task_completion(self):
-        self.num_processing_tasks -= 1
+    def record_task_completion(self) -> None:
+        self.num_executing_tasks -= 1
         self.num_completed_tasks += 1

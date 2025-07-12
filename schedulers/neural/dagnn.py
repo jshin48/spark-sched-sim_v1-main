@@ -4,7 +4,7 @@ from torch_scatter import segment_csr
 import torch_geometric.utils as pyg_utils
 import torch_geometric.nn as gnn
 
-from .neural import NeuralScheduler, StagePolicyNetwork, ExecPolicyNetwork
+from schedulers.Hyperheuristics.scheduler import NeuralScheduler, StagePolicyNetwork, ExecPolicyNetwork
 from spark_sched_sim.wrappers import DAGNNObsWrapper
 
 

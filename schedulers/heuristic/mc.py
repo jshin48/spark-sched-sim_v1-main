@@ -1,5 +1,6 @@
 import numpy as np
 from .heuristic import HeuristicScheduler
+from spark_sched_sim.wrappers import DAGNNObsWrapper
 
 class McScheduler(HeuristicScheduler):
     def __init__(self, num_executors, resource_allocation):
@@ -7,6 +8,8 @@ class McScheduler(HeuristicScheduler):
         super().__init__(name)
         self.num_executors = num_executors
         self.resource_allocation = resource_allocation
+        self.obs_wrapper_cls = DAGNNObsWrapper
+        self.heuristic_idx = 0
 
     def schedule(self, obs):
         job_ptr = np.array(obs["dag_ptr"])
@@ -72,7 +75,7 @@ class McScheduler(HeuristicScheduler):
                         num_exec = min(exec_cap[selected_job_idx] - exec_supplies[selected_job_idx], num_committable_execs)-1
                     return {"stage_idx": selected_stage_idx, "num_exec": num_exec}
                 else:
-                    # resource allocation will be determined in "neural.py"
+                    # resource allocation will be determined in "env_wrapper.py"
                     return {"stage_idx": selected_stage_idx, "num_exec": -1}
             return {"stage_idx": -1, "num_exec": num_committable_execs}
 

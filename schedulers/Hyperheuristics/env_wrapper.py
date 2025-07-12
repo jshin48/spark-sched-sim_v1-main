@@ -1,46 +1,63 @@
+from typing import Any
+from numpy import ndarray
+from gymnasium import Wrapper, ActionWrapper, ObservationWrapper
 import numpy as np
-from gymnasium import ObservationWrapper, ActionWrapper
 import gymnasium.spaces as sp
 
-from .. import graph_utils as utils
-
+from . import utils
 
 #NUM_NODE_FEATURES = 7
 
 
-class NeuralActWrapper(ActionWrapper):
+class HyperEnvWrapper(Wrapper):
+    def __init__(self, env):
+        env = HyperActWrapper(env)
+        env = HyperObsWrapper(env)
+        super().__init__(env)
+
+
+
+class HyperActWrapper(ActionWrapper):
     """converts a neural scheduler's actions to the environment's format"""
 
-    def __init__(self, env):
+    def __init__(self, env) -> None:
         super().__init__(env)
+
         self.action_space = sp.Dict(
-            {   "heuristic_idx": sp.Discrete(env.unwrapped.num_heuristics),
-                "resource_heuristic_idx": sp.Discrete(env.unwrapped.num_resource_heuristics),
-                "stage_idx": sp.Discrete(1),
-                "job_idx": sp.Discrete(1),
-                "num_exec": sp.Discrete(env.unwrapped.num_executors),
+            {
+                "heuristic_idx": sp.Discrete(env.unwrapped.num_heuristics),
             }
         )
 
     def action(self, act):
-        return {"heuristic_idx":act["heuristic_idx"], "stage_idx": act["stage_idx"], "num_exec": 1+act["num_exec"]}
+        return {"heuristic_idx": act["heuristic_idx"]}
 
-
-class NeuralObsWrapper(ObservationWrapper):
+class HyperObsWrapper(ObservationWrapper):
     """transforms environment observations into a format that's more suitable
     for neural schedulers.
     """
 
-    def __init__(self, env, num_tasks_scale=200, work_scale=1e5):
+    def __init__(self, env, scales = {"num_tasks": 100,
+                                      "work": 1e5,
+                                      "cpt": 1e5,
+                                      "num_nodes": 10 }):
         super().__init__(env)
 
-        self.num_tasks_scale = num_tasks_scale
-        self.work_scale = work_scale
+        # scales for node features
+        self.num_tasks_scale = scales["num_tasks"]
+        self.work_scale = scales["work"]
+        self.cpt_scale = scales["cpt"]
+        self.num_node_scale = scales["num_nodes"]
         self.num_executors = env.unwrapped.num_executors
+
         self.NUM_NODE_FEATURES= env.unwrapped.NUM_NODE_FEATURES
 
-        self.cpt_scale = env.unwrapped.cpt_scale
-        self.num_node_scale = env.unwrapped.num_node_scale
+        self._cache: dict[str, Any] = {
+            "num_nodes": -1,
+            "edge_links": None,
+            "edge_masks": None,
+        }
+
 
         self.observation_space = sp.Dict(
             {
@@ -51,10 +68,11 @@ class NeuralObsWrapper(ObservationWrapper):
                 "dag_ptr": sp.Sequence(sp.Discrete(1)),
                 "stage_mask": sp.Sequence(sp.Discrete(2)),
                 "exec_mask": sp.Sequence(sp.MultiBinary(self.num_executors)),
-                "exec_supplies": sp.Sequence(sp.Discrete(1)), # JS added
-                "source_job_idx": sp.Discrete(1), # JS added
-                "num_committable_execs": sp.Discrete(1),  # JS added
-                "DRA_exec_cap" : sp.Sequence(sp.Discrete(1)) #JS added
+                "edge_masks": sp.MultiBinary((1, 1)),
+                #"num_committable_execs": sp.Discrete(self.num_executors + 1),  # JS added
+                "source_job_idx": sp.Discrete(1),  # JS added
+                "exec_supplies": sp.Sequence(sp.Discrete(1)),  # JS added
+                "DRA_exec_cap" : sp.Sequence(sp.Discrete(self.num_executors)) #JS added
             }
         )
 
@@ -145,8 +163,8 @@ class DAGNNObsWrapper(NeuralObsWrapper):
     for asynchronous message passing.
     """
 
-    def __init__(self, env):
-        super().__init__(env)
+    def __init__(self, env, scales):
+        super().__init__(env, scales)
 
         self.observation_space["edge_masks"] = sp.MultiBinary((1, 1))
 

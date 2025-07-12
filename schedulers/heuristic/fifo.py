@@ -1,5 +1,7 @@
 import numpy as np
 from .heuristic import HeuristicScheduler
+from .heuristic_utils import parse_jobs_from_obs
+from spark_sched_sim.wrappers import DAGNNObsWrapper
 
 class FifoScheduler(HeuristicScheduler):
     def __init__(self, num_executors, resource_allocation):
@@ -7,6 +9,8 @@ class FifoScheduler(HeuristicScheduler):
         super().__init__(name)
         self.num_executors = num_executors
         self.resource_allocation = resource_allocation
+        self.obs_wrapper_cls = DAGNNObsWrapper
+        self.heuristic_idx = 0
 
     def schedule(self, obs):
         obs = self.preprocess_obs(obs)

@@ -4,9 +4,10 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader
 
+from schedulers.scheduler import update_parameters
 from .trainer import Trainer
-from spark_sched_sim import graph_utils
-
+from schedulers.Hyperheuristics import utils
+from . import utils
 
 EPS = 1e-8
 
@@ -25,13 +26,13 @@ class RolloutDataset(Dataset):
         return self.obsns[idx], self.acts[idx], self.advgs[idx], self.lgprobs[idx]
 
 
-def collate_fn(batch):
-    obsns, acts, advgs, lgprobs = zip(*batch)
-    obsns = graph_utils.collate_obsns(obsns)
-    acts = torch.stack(acts)
-    advgs = torch.stack(advgs)
-    lgprobs = torch.stack(lgprobs)
-    return obsns, acts, advgs, lgprobs
+# def collate_fn(batch):
+#     obsns, acts, advgs, lgprobs = zip(*batch)
+#     obsns = graph_utils.collate_obsns(obsns)
+#     acts = torch.stack(acts)
+#     advgs = torch.stack(advgs)
+#     lgprobs = torch.stack(lgprobs)
+#     return obsns, acts, advgs, lgprobs
 
 
 class PPO(Trainer):
@@ -69,7 +70,7 @@ class PPO(Trainer):
             dataset,
             batch_size=len(dataset) // self.num_batches + 1,
             shuffle=True,
-            collate_fn=collate_fn,
+            collate_fn=lambda batch: zip(*batch),
         )
 
         return self._train(dataloader)
@@ -104,7 +105,7 @@ class PPO(Trainer):
                     continue_training = False
                     break
 
-                self.agent.update_parameters(total_loss)
+                update_parameters(self.agent.max_grad_norm, self.agent.actor, self.agent.optim, total_loss)
 
         return {
             "policy loss": np.abs(np.mean(policy_losses)),

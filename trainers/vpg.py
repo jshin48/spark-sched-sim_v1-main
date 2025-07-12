@@ -2,8 +2,9 @@ import numpy as np
 import torch
 import torch.profiler
 
+from schedulers.scheduler import update_parameters
 from .trainer import Trainer
-from spark_sched_sim.graph_utils import collate_obsns
+from schedulers.Hyperheuristics.utils import collate_obsns
 
 
 class VPG(Trainer):
@@ -49,7 +50,7 @@ class VPG(Trainer):
             loss = policy_loss + self.entropy_coeff * entropy_loss
             loss.backward()
 
-        self.agent.update_parameters()
+        update_parameters(self.agent.max_grad_norm, self.agent.actor, self.agent.optim)
 
         return {
             "policy loss": np.mean(policy_losses),

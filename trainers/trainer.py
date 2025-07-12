@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import Iterable
+from collections.abc import Iterable
+from typing import Any
 import shutil
 import os
 import os.path as osp
@@ -11,12 +12,15 @@ import time
 
 import numpy as np
 import torch
-from multiprocessing import Pipe, Process, Lock
+import multiprocessing as mp
 from torch.utils.tensorboard import SummaryWriter
 
-from spark_sched_sim.schedulers import make_scheduler, NeuralScheduler
+from schedulers import make_scheduler, TrainableScheduler
 from .rollout_worker import RolloutWorkerSync, RolloutWorkerAsync, RolloutBuffer
 from .utils import Baseline, ReturnsCalculator
+
+
+CfgType = dict[str, Any]
 
 
 class Trainer(ABC):
@@ -24,11 +28,13 @@ class Trainer(ABC):
     abstract method `train_on_rollouts`
     """
 
-    def __init__(self, agent_cfg, env_cfg, train_cfg):
+    def __init__(
+        self, agent_cfg: CfgType, env_cfg: CfgType, train_cfg: CfgType
+    ) -> None:
         self.seed = train_cfg["seed"]
         torch.manual_seed(self.seed)
 
-        self.agent_cls = agent_cfg["agent_cls"]
+        self.scheduler_cls = agent_cfg["agent_cls"]
 
         self.device = torch.device(
             train_cfg.get("device", "cuda" if torch.cuda.is_available() else "cpu")
@@ -54,12 +60,12 @@ class Trainer(ABC):
         self.env_cfg = env_cfg
 
         self.baseline = Baseline(self.num_sequences, self.num_rollouts)
-        self.rollout_duration = train_cfg.get("rollout_duration")
 
-        assert ("reward_buff_cap" in train_cfg) ^ ("beta_discount" in train_cfg), (
-            "must provide exactly one of `reward_buff_cap`"
-            " and `beta_discount` in config"
-        )
+        self.rollout_duration: float | None = train_cfg.get("rollout_duration")
+
+        assert ("reward_buff_cap" in train_cfg) ^ (
+            "beta_discount" in train_cfg
+        ), "must provide exactly one of `reward_buff_cap` and `beta_discount` in config"
 
         if "reward_buff_cap" in train_cfg:
             self.return_calc = ReturnsCalculator(buff_cap=train_cfg["reward_buff_cap"])
@@ -68,17 +74,15 @@ class Trainer(ABC):
             env_cfg |= {"beta": beta}
             self.return_calc = ReturnsCalculator(beta=beta)
 
-        self.agent_cfg = (
-                agent_cfg
-                | {"num_executors": env_cfg["num_executors"]}
-                | {k: train_cfg[k] for k in ["opt_cls", "opt_kwargs", "max_grad_norm"]}
+        self.scheduler_cfg = (
+            agent_cfg
+            | {"num_executors": env_cfg["num_executors"]}
+            | {k: train_cfg[k] for k in ["opt_cls", "opt_kwargs", "max_grad_norm"]}
         )
-        self.agent = make_scheduler(self.agent_cfg)
+        scheduler = make_scheduler(self.scheduler_cfg)
+        assert isinstance(scheduler, TrainableScheduler), "scheduler must be trainable."
+        self.scheduler: TrainableScheduler = scheduler
 
-        # Measure best_avg_job_duration for hyper-parameter tuning purpose
-        self.best_avg_job_duration = None
-
-        assert isinstance(self.agent, NeuralScheduler), "scheduler must be trainable."
 
     def train(self):
         """trains the model on different job arrival sequences.
@@ -94,35 +98,45 @@ class Trainer(ABC):
         # where `n = self.model_save_freq`
         best_state = None
 
-        # self.agent.actor.to(self.device, non_blocking=True)
+        exception: Exception | None = None
 
         print("Beginning training.\n", flush=True)
         past_comp_time = time.time()
         training_time = []
         all_job_duration = []
         for i in range(self.num_iterations):
-            actor_sd = deepcopy(self.agent.actor.state_dict())
+            state_dict = deepcopy(self.scheduler.state_dict())
+
             # # move params to GPU for learning
-            self.agent.actor.to(self.device, non_blocking=True)
+            self.scheduler.to(self.device, non_blocking=True)
 
             # scatter
             for conn in self.conns:
-                conn.send({"actor_sd": actor_sd})
+                conn.send({"state_dict": state_dict})
 
             # gather
-            results = [conn.recv() for conn in self.conns]  #rollout_worker
+            results = []
+            for i, conn in enumerate(self.conns):
+                res = conn.recv()
+                if isinstance(res, Exception):
+                    print(f"An exception occured in process {i}", flush=True)
+                    exception = res
+                    break
+                results += [res]
+
+            if exception:
+                break
 
             rollout_buffers, rollout_stats_list = zip(
                 *[(res["rollout_buffer"], res["stats"]) for res in results if res]
-            ) #rollout_worker.py def run
+            )
 
             # update parameters
             # with Profiler():
             learning_stats = self.train_on_rollouts(rollout_buffers) #PPO (evaluate action & update model?)
 
-            # # return params to CPU before scattering updated state dict
-            # # to the rollout workers
-            self.agent.actor.to("cpu", non_blocking=True)
+            # return params to CPU before scattering updated state dict to the rollout workers
+            self.scheduler.to("cpu", non_blocking=True)
 
             avg_num_jobs = self.return_calc.avg_num_jobs or np.mean(
                 [stats["avg_num_jobs"] for stats in rollout_stats_list]
@@ -134,7 +148,7 @@ class Trainer(ABC):
             # check if model is the current best
             if not best_state or avg_num_jobs < best_state["avg_num_jobs"]:
                 best_state = self._capture_state(
-                    i, avg_num_jobs, actor_sd, rollout_stats_list
+                    i, avg_num_jobs, state_dict, rollout_stats_list
                 )
 
             if (i + 1) % self.checkpointing_freq == 0:
@@ -145,8 +159,6 @@ class Trainer(ABC):
                 ep_lens = [len(buff) for buff in rollout_buffers if buff]
                 self._write_stats(i, learning_stats, rollout_stats_list, ep_lens)
 
-            # if self.agent.lr_scheduler:
-            #     self.agent.lr_scheduler.step()
             curr_comp_time = time.time()
             training_time.append(curr_comp_time-past_comp_time)
             print(
@@ -164,6 +176,9 @@ class Trainer(ABC):
         print("all_job_duration",all_job_duration)
         self._cleanup()
 
+        if exception:
+            raise exception
+
     @abstractmethod
     def train_on_rollouts(
         self, rollout_buffers: Iterable[RolloutBuffer]
@@ -172,7 +187,9 @@ class Trainer(ABC):
 
     # internal methods
 
-    def _preprocess_rollouts(self, rollout_buffers):
+    def _preprocess_rollouts(
+        self, rollout_buffers: Iterable[RolloutBuffer]
+    ) -> dict[str, tuple]:
         (
             obsns_list,
             actions_list,
@@ -201,10 +218,16 @@ class Trainer(ABC):
             resets_list,
         )
 
-        wall_times_list = [wall_times[:-1] for wall_times in wall_times_list]
-        baseline_list = self.baseline(wall_times_list, returns_list)
+        wall_times_list = tuple([wall_times[:-1] for wall_times in wall_times_list])
+        baselines_list = self.baseline(wall_times_list, returns_list)
 
-        return obsns_list, actions_list, returns_list, baseline_list, lgprobs_list
+        return {
+            "obsns_list": obsns_list,
+            "actions_list": actions_list,
+            "returns_list": returns_list,
+            "baselines_list": baselines_list,
+            "lgprobs_list": lgprobs_list,
+        }
 
     def _setup(self) -> None:
         # logging
@@ -224,8 +247,7 @@ class Trainer(ABC):
         # print('cuda available:', torch.cuda.is_available())
         # torch.autograd.set_detect_anomaly(True)
 
-
-        self.agent.train()
+        self.scheduler.train()
 
         self._start_rollout_workers()
 
@@ -245,17 +267,19 @@ class Trainer(ABC):
 
         print("\nTraining complete.", flush=True)
 
-    def _capture_state(self, i, avg_num_jobs, actor_sd, stats_list):
+    def _capture_state(
+        self, i: int, avg_num_jobs: float, state_dict: dict, stats_list: Iterable[dict]
+    ) -> dict[str, Any]:
         return {
             "iteration": i,
             "avg_num_jobs": np.round(avg_num_jobs, 3),
-            "state_dict": actor_sd,
+            "state_dict": state_dict,
             "completed_job_count": int(
                 np.mean([stats["num_completed_jobs"] for stats in stats_list])
             ),
         }
 
-    def _checkpoint(self, i, best_state):
+    def _checkpoint(self, i: int, best_state: dict) -> None:
         dir = osp.join(self.checkpointing_dir, f"{i+1}")
         os.mkdir(dir)
         best_sd = best_state.pop("state_dict")
@@ -270,41 +294,48 @@ class Trainer(ABC):
         base_seeds = self.seed + np.arange(self.num_sequences)
         base_seeds = np.repeat(base_seeds, self.num_rollouts)
         seed_step = self.num_sequences
-        lock = Lock()
+        lock = mp.Lock()
         if __name__ != '__main__':
             for rank, base_seed in enumerate(base_seeds):
                 print('start learning:',rank,",",base_seed)
-                conn_main, conn_sub = Pipe()
+                conn_main, conn_sub = mp.Pipe()
                 self.conns += [conn_main]
 
-                proc = Process(
-                    target=RolloutWorkerAsync(self.rollout_duration)
-                    if self.rollout_duration
-                    else RolloutWorkerSync(),
-                    args=(
-                        rank,
-                        conn_sub,
-                        self.agent_cls,
-                        self.env_cfg,
-                        self.agent_cfg,
-                        self.stdout_dir,
-                        int(base_seed),
-                        seed_step,
-                        lock,
-                    ),
-                )
+            proc = mp.Process(
+                target=RolloutWorkerAsync(self.rollout_duration)
+                if self.rollout_duration
+                else RolloutWorkerSync(),
+                args=(
+                    rank,
+                    conn_sub,
+                    self.env_cfg,
+                    self.scheduler_cfg,
+                    self.stdout_dir,
+                    int(base_seed),
+                    seed_step,
+                    lock,
+                ),
+            )
 
-                self.procs += [proc]
-                proc.start()
+            self.procs += [proc]
+            proc.start()
 
-        [proc.join(5) for proc in self.procs]
+        for proc in self.procs:
+            proc.join(5)
 
     def _terminate_rollout_workers(self) -> None:
-        [conn.send(None) for conn in self.conns]
-        [proc.join() for proc in self.procs]
+        for conn in self.conns:
+            conn.send(None)
+
+        for proc in self.procs:
+            proc.join()
 
     def _write_stats(
-        self, epoch: int, learning_stats, stats_list, ep_lens: list[int]
+        self,
+        epoch: int,
+        learning_stats: dict,
+        stats_list: Iterable[dict],
+        ep_lens: list[int],
     ) -> None:
         episode_stats = learning_stats | {
             "avg num concurrent jobs": np.mean(

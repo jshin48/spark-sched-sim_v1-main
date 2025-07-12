@@ -1,10 +1,10 @@
 import numpy as np
 
-from .base_data_sampler import BaseDataSampler
+from .data_sampler import DataSampler
 from . import alibaba
 from . import tpch
 
-class MixDataSampler(BaseDataSampler):
+class MixDataSampler(DataSampler):
     def __init__(
         self,
         job_arrival_rate: float,

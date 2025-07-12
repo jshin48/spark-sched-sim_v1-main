@@ -4,9 +4,11 @@ from torch_scatter import segment_csr
 import torch_geometric.utils as pyg_utils
 import torch_sparse
 
-from .neural import NeuralScheduler, ExecPolicyNetwork, make_mlp , HeuristicPolicyNetwork, ResourcePolicyNetwork
+from schedulers.Hyperheuristics.scheduler import NeuralScheduler, StagePolicyNetwork, ExecPolicyNetwork, \
+    HeuristicPolicyNetwork
+from schedulers.Hyperheuristics.utils import make_mlp
 from spark_sched_sim.wrappers import DAGNNObsWrapper
-from spark_sched_sim import graph_utils
+from schedulers.Hyperheuristics import utils
 
 
 class HyperHeuristicScheduler(NeuralScheduler):
@@ -21,19 +23,16 @@ class HyperHeuristicScheduler(NeuralScheduler):
         opt_cls=None,
         opt_kwargs=None,
         max_grad_norm=None,
-        num_node_features = 7,
-        num_dag_features = 3,
-        num_heuristics = 2,
-        input_feature = ['num_queue',"glob"],
-        list_heuristics= ['FIFO', 'MC'],
-        num_resource_heuristics= 3,
-        list_resource_heuristics= ['FIFO', 'Fair'],
+        num_node_features=7,
+        num_dag_features=3,
+        num_heuristics= 3,
+        list_heuristics= ['FIFO', 'Fair', 'MC'],
         resource_allocation = 'Random',
         **kwargs
     ):
         name = "HyperHeuristic"
-        # if state_dict_path:
-        #     name += f":{state_dict_path}"
+        if state_dict_path:
+            name += f":{state_dict_path}"
 
         actor = ActorNetwork(
             num_executors,
@@ -43,11 +42,7 @@ class HyperHeuristicScheduler(NeuralScheduler):
             gnn_mlp_kwargs,
             policy_mlp_kwargs,
             num_heuristics,
-            list_heuristics,
-            input_feature,
-            num_resource_heuristics,
-            list_resource_heuristics,
-            resource_allocation
+            list_heuristics
         )
 
         obs_wrapper_cls = DAGNNObsWrapper
@@ -61,11 +56,9 @@ class HyperHeuristicScheduler(NeuralScheduler):
             opt_cls,
             opt_kwargs,
             max_grad_norm,
+            resource_allocation,
             num_heuristics,
             list_heuristics,
-            num_resource_heuristics,
-            list_resource_heuristics,
-            resource_allocation,
         )
 
 
@@ -79,36 +72,24 @@ class ActorNetwork(nn.Module):
         gnn_mlp_kwargs,
         policy_mlp_kwargs,
         num_heuristics,
-        list_heuristics,
-        input_feature,
-        num_resource_heuristics,
-        list_resource_heuristics,
-        resource_allocation
+        list_heuristics
     ):
         super().__init__()
         self.encoder = EncoderNetwork(num_node_features, embed_dim, gnn_mlp_kwargs)
-        self.embedding_model = ComplexHeuristicEmbeddingModel(
-            action_size=num_heuristics,
-            embedding_dim=embed_dim,
-            hidden_dim=64,  # Example hidden dimension size
-            dropout=0.1,
 
+        emb_dims = {"heuristic":embed_dim,"node": embed_dim, "dag": embed_dim, "glob": embed_dim}
+
+        self.stage_policy_network = StagePolicyNetwork(
+            num_node_features, emb_dims, policy_mlp_kwargs
         )
 
-        emb_dims = {"resource_heuristic":embed_dim, "heuristic":embed_dim,"node": embed_dim, "dag": embed_dim, "glob": embed_dim}
+        self.exec_policy_network = ExecPolicyNetwork(
+            num_executors, num_dag_features, emb_dims, policy_mlp_kwargs
+        )
 
         self.heuristic_policy_network = HeuristicPolicyNetwork(
-            self.embedding_model, num_heuristics,
-            list_heuristics, num_node_features, input_feature, emb_dims, policy_mlp_kwargs
+            num_heuristics, list_heuristics, emb_dims, policy_mlp_kwargs
         )
-        if resource_allocation == "DNN":
-            self.exec_policy_network = ExecPolicyNetwork(
-                num_executors, num_dag_features, emb_dims, policy_mlp_kwargs
-            )
-        elif resource_allocation == "HyperHeuristic":
-            self.resource_heuristic_policy_network = ResourcePolicyNetwork(
-                self.embedding_model, num_resource_heuristics, list_resource_heuristics,
-                num_executors, num_dag_features, emb_dims, policy_mlp_kwargs)
 
         self._reset_biases()
 
@@ -221,8 +202,7 @@ class DagEncoder(nn.Module):
     def forward(self, h_node, dag_batch):
         # include original input
         h_node = torch.cat([dag_batch.x, h_node], dim=1)
-        h_node_matrix = self.mlp(h_node)  #dim : num_node x output_dim=embed_dim
-        h_dag = segment_csr(h_node_matrix, dag_batch.ptr) #sum h_node_matrix value over all nodes in the same dag, dim: num_dag x output_dim
+        h_dag = segment_csr(self.mlp(h_node), dag_batch.ptr)
         return h_dag
 
 
@@ -242,42 +222,3 @@ class GlobalEncoder(nn.Module):
             h_glob = h_dag.sum(0).unsqueeze(0)
 
         return h_glob
-
-
-class ComplexHeuristicEmbeddingModel(nn.Module):
-    def __init__(self, action_size, embedding_dim, hidden_dim, dropout=0.1):
-        super().__init__()
-        # Embedding layer
-        self.embedding = nn.Embedding(action_size, embedding_dim)
-        #nn.init.uniform_(self.embedding.weight, -0.1, +0.1)
-        nn.init.xavier_uniform_(self.embedding.weight)
-
-        #print("*******Init embedding weight:",self.embedding.weight)
-
-        # Additional layers for complexity
-        self.fc1 = nn.Linear(embedding_dim, hidden_dim)
-        self.relu = nn.ReLU()
-        self.fc2 = nn.Linear(hidden_dim, hidden_dim)
-        self.batch_norm = nn.BatchNorm1d(hidden_dim)
-
-        # Dropout layer
-        self.dropout = nn.Dropout(p=dropout)
-
-        # Final linear layer to map back to embedding dimension
-        self.fc3 = nn.Linear(hidden_dim, embedding_dim)
-
-    def forward(self, action_indices):
-        # Lookup embeddings
-        x = self.embedding(action_indices)
-
-        # Pass through additional layers
-        x = self.fc1(x)
-        x = self.relu(x)
-        x = self.fc2(x)
-        x = self.batch_norm(x)
-        x = self.dropout(x)
-
-        # Map back to original embedding dimension
-        x = self.fc3(x)
-
-        return x
